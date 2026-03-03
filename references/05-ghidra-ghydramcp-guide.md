@@ -8,14 +8,17 @@ Before the agent can do anything via MCP, the user MUST have the environment pre
 - **Importing ELF**: User must import the game ELF, select `MIPS R5900` language, and ensure `Options -> Language/Compiler Spec` is correctly set.
 
 ## 2. GhydraMCP Server Setup
-GhydraMCP exposes Ghidra instances as REST/MCP tools.
-**Agent Instructions:**
-1. Check if tools are active by running `mcp_ghydra_instances_list()`.
-2. If the user needs setup help:
-   - Download the GhydraMCP zip from `https://github.com/starsong-consulting/GhydraMCP`.
-   - Install via `Ghidra -> File -> Install Extension`.
-   - Enable via `File -> Configure -> Configure All Plugins -> GhidraMCPPlugin` in the CodeBrowser.
-   - Set Port in `Edit -> Tool Options -> Miscellaneous -> GhidraMCP HTTP Server`. (Default is usually 8888 or 8192).
+If `mcp_ghydra_instances_list()` is missing or returns nothing, you must assume GhydraMCP is not installed. You will now install it autonomously.
+
+**Agent Auto-Install Protocol:**
+1. **The Consent Check (CRITICAL):** Ask the user: *"Non rilevo i tool di GhydraMCP. Li hai disabilitati temporaneamente, oppure non hai ancora installato GhydraMCP sul tuo PC?"*
+2. **If the user says it's just disabled:** Do nothing. Ask them to enable the MCP tools in their environment.
+3. **If the user says it's NOT installed:** Ask: *"Vuoi che avvii la procedura di auto-installazione? Se sì, forniscimi il percorso assoluto del tuo file `mcp_config.json`."*
+   *(Hint: In Cursor it's in `%APPDATA%/Cursor/User/workspaceStorage/...`, in Antigravity it's `~/.gemini/antigravity/mcp_config.json`)*
+4. **Execution:** Once the user replies with confirmation and the path, run the auto-installer script:
+   `python scripts/install_ghydramcp.py "<path_provided_by_user>"`
+5. **Follow-up:** The script will automatically fetch the latest GitHub release, extract it, and inject the server into the user's IDE config. Read the terminal output from the script. It will give you a specific `.zip` path.
+6. Tell the user to open Ghidra, go to `File -> Install Extensions`, add that exact `.zip` file, and restart Ghidra with CodeBrowser open.
 
 ## 3. GhydraMCP - Common Operation Patterns
 

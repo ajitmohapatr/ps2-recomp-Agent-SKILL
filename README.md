@@ -25,7 +25,8 @@ For the agent to work flawlessly, your machine must have the following ready:
 2. **Python 3.x**: Required for the `log_reaper.py`, `pdf_grep.py`, and `pdf_extract_image.py` scripts. Install the PDF parser via: `pip install PyMuPDF pymupdf4llm`
 3. **Ghidra 11.4.2**:
    - Installed with the [EmotionEngine Reloaded Plugin](https://github.com/chaoticgd/ghidra-emotionengine-reloaded).
-   - Installed with the [**GhydraMCP**](https://github.com/starsong-consulting/GhydraMCP) extension running on port 8192.
+   - Installed with the [**GhydraMCP**](https://github.com/starsong-consulting/GhydraMCP) extension running on port 8192 (CodeBrowser must be open with the ELF).
+   - **Crucial**: Ensure `mcp_config.json` inside your AI environment (Cursor/Antigravity) is configured to connect to the local GhydraMCP server. This allows the *Agent* to drive Ghidra, not you!
 
 ---
 
@@ -35,17 +36,20 @@ For the agent to work flawlessly, your machine must have the following ready:
 Ensure the `ps2-recomp-mastery/` folder is placed inside your root PS2Recomp workspace, alongside the `ps2xRecomp` and `ps2xRuntime` directories.
 
 ### 2. The Cold Start Prompt (Option A: New Project)
-If you are starting a game completely from scratch, open your AI IDE (Cursor/Antigravity) and use this **EXACT PROMPT** to establish strict AI boundaries:
+If you are starting a game completely from scratch, open your AI IDE (Cursor/Antigravity) and use this **EXACT PROMPT** to begin:
 
 ```text
-Load the skill `ps2-recomp-mastery`. I need to port [GAME NAME]. The ISO is located at `[ABSOLUTE PATH TO ISO]`. Start at Phase 0. Act autonomously. Only stop and ask for human input if you need me to use GhydraMCP inside Ghidra, or if you hit a Circuit Breaker infinite loop.
+Load the skill `ps2-recomp-mastery`. I need to port [GAME NAME]. 
+The ISO is located at `[ABSOLUTE PATH TO ISO]`. Start at Phase 0. 
 ```
 
 ### 3. The Warm Boot Prompt (Option B: Existing Project)
 If you already generated `game.toml`, or if you are mid-way fixing syscalls, use this **EXACT PROMPT** to safely resume the session using persistent memory:
 
 ```text
-Load the skill `ps2-recomp-mastery`. We are working on [GAME NAME]. Read the `PS2_PROJECT_STATE.md` file to infer the current Phase, and resume work autonomously from there.
+Load the skill `ps2-recomp-mastery`. We are working on [GAME NAME]. 
+Read the `PS2_PROJECT_STATE.md` file to infer the current Phase, 
+and resume work autonomously from there.
 ```
 *(Note: If the state file doesn't exist, the agent is trained to inspect your folders, infer the phase based on compiled files, and generate the state file on the fly).*
 
@@ -55,8 +59,8 @@ Load the skill `ps2-recomp-mastery`. We are working on [GAME NAME]. Read the `PS
 
 While the agent is highly autonomous, PS2 reverse engineering requires your eyes:
 
-- **Monitor الغ `PS2_PROJECT_STATE.md`**: Open this file in split-screen. You will see the agent filling out tables of resolved stubs, triage attempts, and unhandled opcodes in real-time. If it hallucinated something, correct the Markdown file directly. The agent will read your correction on the next refresh.
-- **Run the Native Tools Prompts**: When the agent hangs on a complex MIPS calculation (`// Unhandled opcode`), open Ghidra, ensure GhydraMCP is running, and tell the agent: *"Analizza l'indirizzo 0xXXXXXX via GhydraMCP e dimmi cosa fa"*
+- **Monitor `PS2_PROJECT_STATE.md`**: Open this file in split-screen. You will see the agent filling out tables of resolved stubs, triage attempts, and unhandled opcodes in real-time. If it hallucinated something, correct the Markdown file directly. The agent will read your correction on the next refresh.
+- **Ensure Ghidra is Ready**: The agent drives Ghidra, but *you* must open Ghidra, perform the initial auto-analysis on the game's ELF, and leave the CodeBrowser window open with the GhydraMCP plugin running.
 - **Do not interrupt the Build Daemon**: When the agent runs `build_daemon.ps1`, let it finish. It might take 10-20 seconds. The agent will read the MSVC output and fix syntax errors itself.
 
 ---

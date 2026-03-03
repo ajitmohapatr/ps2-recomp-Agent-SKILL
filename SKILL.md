@@ -15,7 +15,7 @@ Transform into a PlayStation 2 Reverse Engineering God. This skill provides the 
 ## 🧠 Core Directives
 1. **Never guess, infer from patterns.** You have the entire PS2 architecture mapped in the `references/` directory. Use it.
 2. **Be game-agnostic.** Never assume hardcoded names/addresses. Rely on phase detection and the `PS2_PROJECT_STATE.md`.
-3. **Embrace GhydraMCP.** When available, use Ghidra tools to inspect binaries rather than blindly guessing sub_xxx behavior.
+3. **Embrace GhydraMCP Autonomy.** When available, use GhydraMCP tools to inspect binaries rather than blindly guessing sub_xxx behavior. **CRITICAL:** Do NOT ask the user to open Ghidra to analyze code for you. You have MCP tools to decompile, rename, and search. Drive the reverse-engineering yourself.
 4. **Follow the established workflow.** Do not skip steps. ISO → ELF → TOML → C++ → Runtime.
 5. **The Internet is your friend.** When encountering bizarre compiler errors, undocumented PS2Recomp bugs, or known intractable crashes for a specific game, use your `search_web` tool to search the PS2Recomp GitHub issues, pull requests, or the wider internet for community-discovered workarounds.
 
@@ -89,20 +89,20 @@ If you find yourself executing the same loop of `compile -> test -> fail -> gues
 4. **Search the Web:** Use `search_web` to query "PS2Recomp [game name] crash" or search the PS2Recomp GitHub repository directly for known issues related to your current bug.
 5. If you still cannot find the answer, format a specific, technical question about the physical register or function behavior and **ASK THE USER**. Never spin infinitely.
 
-## 🔍 GhydraMCP Integration & Ground Truth
+## 🔍 GhydraMCP Integration (Absolute Autonomy)
 
 > **CRITICAL REALITY:** `ps2_recomp` is NOT perfect. It often generates flawed, partial, or broken C++ code, especially for games without debug symbols. **Ghidra is your ONLY trusted friend and absolute ground truth.** Always cross-reference the generated C++ against the raw decompiled MIPS in Ghidra.
+> **RULE OF AUTONOMY:** You are equipped with the GhydraMCP tools. It is strictly FORBIDDEN to ask the human user: *"Can you look at address X in Ghidra and tell me what it does?"* You must use `mcp_ghydra_functions_decompile` and analyze it yourself.
 
 1. **Check Availability**: Call `mcp_ghydra_instances_list()`.
-2. **If NO instance is active**: Tell the user, "GhydraMCP instance non trovata. Vuoi che ti aiuti a configurarla su Ghidra?".
-   - Setup strictly requires: **Ghidra 11.4.2** (verify this version!).
-   - Emotion Engine Plugin: Must be from `https://github.com/chaoticgd/ghidra-emotionengine-reloaded`.
-   - GhydraMCP extension: Running on port 8192 (default).
+2. **If NO instance is active**: The tool may be missing OR temporarily disabled in the user's IDE. **You MUST ask the user**: *"GhydraMCP è disabilitato o non è installato?"* 
+   - If disabled: Instruct them to enable it in their IDE.
+   - If not installed: Trigger the **Agent Auto-Install Protocol** as defined in `references/05-ghidra-ghydramcp-guide.md`.
 3. **If instance IS active**:
-   - Use `mcp_ghydra_functions_decompile` to understand `sub_xxx` behavior when the C++ makes no sense.
+   - Use `mcp_ghydra_functions_decompile` to understand `sub_xxx` behavior when the C++ makes no sense. YOU analyze the output.
    - Use `mcp_ghydra_data_list_strings` to find context strings.
    - Use `mcp_ghydra_xrefs_list` to see where unknown functions are called from.
-   - Use `mcp_ghydra_functions_rename` to label functions once understood.
+   - Use `mcp_ghydra_functions_rename` to label functions once understood, building your map.
 4. **Function Map Export**: If the ELF is stripped, tell the user to export the CSV using the official script located in `ps2xRecomp/tools/ghidra/ExportPS2Functions.py` via the Ghidra Script Manager.
 *Reference: `05-ghidra-ghydramcp-guide.md`.*
 
