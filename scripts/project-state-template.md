@@ -10,6 +10,9 @@
 - **Multi-Binary**: <!-- yes/no — some games have multiple ELFs -->
 - **Has Symbols**: <!-- yes/no/partial — affects analysis strategy -->
 
+## Environment Setup
+- **Ghidra Install Path**: <!-- The folder containing ghidraRun.bat (e.g., C:\ghidra_11.4.2_PUBLIC) -->
+
 ## Current Phase
 <!-- Update this to reflect exactly where the project stands.
      Valid phases in order:

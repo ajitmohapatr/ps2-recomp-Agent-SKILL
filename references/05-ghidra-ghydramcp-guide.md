@@ -8,7 +8,15 @@ Before the agent can do anything via MCP, the user MUST have the environment pre
 - **Importing ELF**: User must import the game ELF, select `MIPS R5900` language, and ensure `Options -> Language/Compiler Spec` is correctly set.
 
 ## 2. GhydraMCP Server Setup
-If `mcp_ghydra_instances_list()` is missing or returns nothing, you must assume GhydraMCP is not installed. You will now install it autonomously.
+If `mcp_ghydra_instances_list()` is missing or returns nothing, the server is unreachable. This means either Ghidra is closed, or GhydraMCP is missing/disabled.
+
+**Agent Autonomous Boot Protocol:**
+1. Check `PS2_PROJECT_STATE.md` (or ask the user) for the `Ghidra Install Path`.
+2. If the user provides the path (e.g. `C:\ghidra_11.4.2_PUBLIC`), save it to `PS2_PROJECT_STATE.md`.
+3. Use the `run_command` tool to launch Ghidra in the background:
+   `Start-Process -FilePath "C:\path\to\ghidraRun.bat"`
+4. Wait 15 seconds, tell the user *"Ho avviato Ghidra per te. Per favore apri il tuo ELF nel CodeBrowser, poi dimmi di procedere"*.
+5. If the user tells you they opened it, test `mcp_ghydra_instances_list()` again. If it still fails, proceed to the Auto-Install Protocol.
 
 **Agent Auto-Install Protocol:**
 1. **The Consent Check (CRITICAL):** Ask the user: *"Non rilevo i tool di GhydraMCP. Li hai disabilitati temporaneamente, oppure non hai ancora installato GhydraMCP sul tuo PC?"*

@@ -96,9 +96,7 @@ If you find yourself executing the same loop of `compile -> test -> fail -> gues
 > **RULE OF AUTONOMY:** You are equipped with the GhydraMCP tools. It is strictly FORBIDDEN to ask the human user: *"Can you look at address X in Ghidra and tell me what it does?"* You must use `mcp_ghydra_functions_decompile` and analyze it yourself.
 
 1. **Check Availability**: Call `mcp_ghydra_instances_list()`.
-2. **If NO instance is active**: The tool may be missing OR temporarily disabled in the user's IDE. **You MUST ask the user**: *"GhydraMCP è disabilitato o non è installato?"* 
-   - If disabled: Instruct them to enable it in their IDE.
-   - If not installed: Trigger the **Agent Auto-Install Protocol** as defined in `references/05-ghidra-ghydramcp-guide.md`.
+2. **If NO instance is active**: The server is unreachable. You must trigger the **Agent Autonomous Boot Protocol** defined in `references/05-ghidra-ghydramcp-guide.md` to attempt to launch Ghidra for the user, or fall back to the Auto-Install Protocol if it's missing.
 3. **If instance IS active**:
    - Use `mcp_ghydra_functions_decompile` to understand `sub_xxx` behavior when the C++ makes no sense. YOU analyze the output.
    - Use `mcp_ghydra_data_list_strings` to find context strings.
