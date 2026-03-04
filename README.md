@@ -51,8 +51,8 @@ Load the skill `ps2-recomp-Agent-SKILL`. I am porting [GAME NAME].
 I have already made some manual progress. Please inspect my working directory, locate my ELF/TOML/logs if they exist, infer my current Phase, generate a `PS2_PROJECT_STATE.md` file reflecting reality, and tell me what we should do next.
 ```
 
-### 4. Scenario C: The Warm Resume (Agent-Managed Project)
-If you an the Agent already worked on this, generated the `game.toml`, and you just want to resume the session after closing the IDE, use this prompt to safely hook back into the persistent memory:
+### 4. Scenario C: The Warm Resume (New Chat / Context Reset)
+LLM Agents eventually run out of memory (context degradation) if a chat gets too long. If the Agent starts acting lobotomized or forgetting basic instructions, **open a brand new chat window** and use this prompt to safely hook back into the persistent memory:
 
 ```text
 Load the skill `ps2-recomp-Agent-SKILL`. We are working on [GAME NAME]. 
@@ -67,6 +67,7 @@ and resume work autonomously from there.
 While the agent is highly autonomous, PS2 reverse engineering requires your eyes:
 
 - **Monitor `PS2_PROJECT_STATE.md`**: Open this file in split-screen. You will see the agent filling out tables of resolved stubs, triage attempts, and unhandled opcodes in real-time. If it hallucinated something, correct the Markdown file directly. The agent will read your correction on the next refresh.
+- **Beware Context Degradation**: If you have been chatting for hours and the Agent asks stupid questions, its context window is full. Stop immediately. Open a new chat and use **Scenario C** to resume. The Agent is programmed to warn you when it feels this happening.
 - **Ensure Ghidra is Ready**: The agent drives Ghidra, but *you* must open Ghidra, perform the initial auto-analysis on the game's ELF, and leave the CodeBrowser window open with the GhydraMCP plugin running.
 - **Do not interrupt the Build Daemon**: When the agent runs `build_daemon.ps1`, let it finish. It might take 10-20 seconds. The agent will read the MSVC output and fix syntax errors itself.
 

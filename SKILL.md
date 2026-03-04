@@ -1,5 +1,5 @@
 ---
-name: ps2-recomp-mastery
+name: ps2-recomp-Agent-SKILL
 description: "Expert PS2 game reverse engineering and PS2Recomp pipeline porting. Use for ISO/ELF extraction, MIPS R5900 analysis, TOML configuration, syscall stubbing, C++ runtime debugging, and GhydraMCP interaction."
 category: development
 risk: unknown
@@ -29,8 +29,9 @@ Because LLM context windows degrade and blur over long compilation/debugging ses
    - Is there a compiled `ps2xRuntime.exe`? Run `log_reaper.py` immediately to see where it crashes, then infer the phase (e.g., PHASE_IO_MODULE if crashing on CD read).
    - Is there only a `game.toml` and an ELF? The project is in PHASE_RECOMPILATION.
    *Once inferred, create the `PS2_PROJECT_STATE.md` file from `scripts/project-state-template.md` and fill it with your deduced reality.*
-3. **Never guess past state.** If you forgot what address you were debugging, do not hallucinate it. Read the state file or the most recent `game.toml`.
-4. **Log Everything.** After *any* major action (compiling, changing TOML, registering an override), you MUST update `PS2_PROJECT_STATE.md`. It is your external hippocampus. Use `replace_file_content` to keep it updated.
+3. **Context Self-Awareness (Anti-Lobotomization):** LLMs degrade over long sessions. If you have been compiling, debugging, and looping for many turns, your context window is filling up. YOU MUST PROACTIVELY WARN THE USER. Say: *"⚠️ Context Degradation Warning: This chat is getting too long and I risk hallucinating. Please open a BRAND NEW CHAT WINDOW and use the 'Scenario C: Warm Resume' prompt from the README to continue safely."* Do this BEFORE you start making stupid mistakes.
+4. **Never guess past state.** If you forgot what address you were debugging, do not hallucinate it. Read the state file or the most recent `game.toml`.
+5. **Log Everything.** After *any* major action (compiling, changing TOML, registering an override), you MUST update `PS2_PROJECT_STATE.md`. It is your external hippocampus. Use `replace_file_content` to keep it updated.
 
 ## 🛠️ The PS2Recomp Master Workflow
 
@@ -65,7 +66,7 @@ Assess the current phase from `PS2_PROJECT_STATE.md` and execute the associated 
 
 1. Move the generated files to `ps2xRuntime/src/runner/`.
 2. Do NOT ask the user to compile or run the game manually. You are autonomous.
-3. Use the supplied scripts in `ps2-recomp-mastery/scripts/`:
+3. Use the supplied scripts in `ps2-recomp-Agent-SKILL/scripts/`:
    - Run `build_daemon.ps1` to compile MSVC headlessly. Read the output to fix your C++ syntax errors.
    - Run `log_reaper.py <exe> <iso>` to launch the game headlessly for a few seconds and capture the crash log automatically.
 4. Address immediate boot crashes found in the `log_reaper` output:
