@@ -1,12 +1,14 @@
-# PS2 Recomp Mastery — User Guide
+<p align="center">
+<img width="512" height="512" alt="Ps2-Recomp-Agent-SKILL" src="https://github.com/user-attachments/assets/ef6a9300-ea65-4364-9a67-75602ebf59a5" />
+</p>
 
-Welcome to the **PS2 Recomp Mastery Skill**. This is not a standard prompt template; it is a complex, hyper-structured Operating System for LLM Agents (like Antigravity or Cursor). It gives them the architectural knowledge, the procedural workflow, and the persistent memory required to autonomously reverse engineer and recompile PlayStation 2 games.
+Welcome to the **PS2 Recomp Mastery**: a complex, hyper-structured Operating System for LLM Agents (like Antigravity or Cursor) that gives them architectural knowledge, procedural workflow and persistent memory required to autonomously reverse engineer and recompile PlayStation 2 games through PS2Recomp project (even if still in dev process).
 
 This guide explains how *you*, the human driver, should use this skill to extract maximum performance from the AI.
 
 ---
 
-## ⚠️ The Paradigm Shift: How to Treat the Agent
+## ⚠️ How to Treat the Agent
 
 Before using this, you must change how you interact with the LLM. 
 **Do not treat it as a chatbot. Treat it as a Junior Reverse Engineer working on your machine.**
@@ -32,7 +34,7 @@ For the agent to work flawlessly, your machine must have the following ready:
 
 ---
 
-## 🚀 How to Start a Session
+## 🚀 Start a Session
 
 ### 1. File Placement
 Ensure the `ps2-recomp-Agent-SKILL/` folder (or `ps2-recomp-Agent-SKILL-main/` if downloaded as ZIP) is placed inside your root PS2Recomp workspace, alongside the `ps2xRecomp` and `ps2xRuntime` directories.
@@ -64,7 +66,7 @@ and resume work autonomously from there.
 
 ---
 
-## 🤝 How to Collaborate (The Human-in-the-Loop)
+## 🤝 Collaborate (The Human-in-the-Loop)
 
 While the agent is highly autonomous, PS2 reverse engineering requires your eyes:
 
