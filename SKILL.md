@@ -48,6 +48,22 @@ Because LLM context windows degrade and blur over long compilation/debugging ses
 
 Assess the current phase from `PS2_PROJECT_STATE.md` and execute the associated actions:
 
+### Preflight Checklist (MANDATORY — Run at EVERY session start)
+Before doing ANY work, you MUST verify these prerequisites using `run_command`. If ANY check fails, **HALT** and guide the user through installation. Do NOT proceed with a degraded environment.
+
+| #   | Check                  | Command                                                                                        | If Missing                                                                                                    |
+| --- | ---------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 1   | **Visual Studio 2022** | Locate `vcvars64.bat` via `vswhere.exe`                                                        | Tell user to install VS 2022 with "Desktop development with C++" workload                                     |
+| 2   | **Clang-CL**           | `clang-cl --version`                                                                           | Tell user: open VS Installer → Individual Components → enable "C++ Clang Compiler for Windows"                |
+| 3   | **Ninja**              | `ninja --version`                                                                              | Tell user: open VS Installer → Individual Components → enable "C++ CMake tools for Windows"                   |
+| 4   | **CMake**              | `cmake --version`                                                                              | Usually bundled with VS. If missing, install from cmake.org                                                   |
+| 5   | **Python 3**           | `python --version`                                                                             | Install from python.org. Needed for `pdf_grep.py`, `log_reaper.py`                                            |
+| 6   | **PyMuPDF**            | `python -c "import fitz"`                                                                      | Run `pip install pymupdf4llm`                                                                                 |
+| 7   | **Ghidra + EE Plugin** | Ask the user: *"Do you have Ghidra 11.4.2 with the Emotion Engine Reloaded plugin installed?"* | Link to ghidra-sre.org and the EE plugin GitHub                                                               |
+| 8   | **GhydraMCP**          | `mcp_ghydra_instances_list()`                                                                  | Trigger the **Autonomous Boot Protocol** → then **Auto-Install Protocol** from `05-ghidra-ghydramcp-guide.md` |
+
+> **ZERO TOLERANCE:** If Clang-CL or Ninja are missing, you MUST NOT fall back to vanilla MSVC + VS Solution. That configuration takes 25+ hours to compile 29,000 files. Refuse to build and insist the user installs Clang+Ninja first.
+
 ### Phase 0: Setup & Toolchain (`PHASE_SETUP` & `PHASE_ISO_EXTRACT`)
 1. **Toolchain Version Check**: Before starting, verify the toolchain age (e.g. via `git log`). Use `search_web` to check the official PS2Recomp GitHub for recent commits/releases. Warn the user if they are outdated. **CRITICAL: NEVER EXECUTE `git pull`, `git checkout`, `git clean` OR ANY DESTRUCTIVE GIT COMMANDS.** Users store their 29,000+ generated C++ files directly in this repo; downloading updates automatically will cause catastrophic merge conflicts and data loss.
 2. **Toolchain Build**: Verify if `ps2_analyzer.exe` and `ps2_recomp.exe` exist. If they do NOT exist, build them from source using CMake.
@@ -73,12 +89,13 @@ Assess the current phase from `PS2_PROJECT_STATE.md` and execute the associated 
 *Reference: `02-mips-r5900-isa.md` for translating missing MIPS instructions to C++.*
 
 ### Phase 4: Autonomous Build & Headless Testing (`PHASE_RUNTIME_BUILD`)
-> **CRITICAL RULE [THERMODYNAMIC LIMIT]:** NEVER modify `.h` header files unless absolutely, strictly necessary. Changing a core header will trigger a full rebuild of 29,000+ generated C++ files, which can take 25+ hours on MSVC and exhaust RAM. Confine your fixes to `.cpp` files (like `ps2_syscalls.cpp` or game overrides).
+> **CRITICAL RULE [THERMODYNAMIC LIMIT]:** NEVER modify `.h` header files unless absolutely, strictly necessary. Changing a core header will trigger a full rebuild of 29,000+ generated C++ files. Confine your fixes to `.cpp` files (like `ps2_syscalls.cpp` or game overrides).
 
-> **BUILD OPTIMIZATION [MANDATORY KNOWLEDGE]:** The `build_daemon.ps1` script auto-detects the fastest available toolchain:
-> 1. **Clang-CL + Ninja** — ⚡ TURBO MODE (~25x faster than vanilla MSVC). Requires "C++ Clang Compiler for Windows" + Ninja from Visual Studio Installer.
-> 2. **MSVC + Ninja** — Good parallelism, much faster than VS solutions.
-> 3. **MSVC + VS Solution** — The slowest fallback (~25 hours for 29k files). If the script falls back to this, you MUST warn the user: *"Your build is using the MSVC Solution generator, which is extremely slow for this project. Install Clang and Ninja via Visual Studio Installer for a 25x speedup."*
+> **BUILD OPTIMIZATION [MANDATORY]:** Clang-CL + Ninja is the ONLY acceptable build configuration. `build_daemon.ps1` will REFUSE to compile without them.
+
+> **FIRST BUILD ONLY — CMakeLists.txt Surgery & HITL:** Before the very first Clang build, you MUST inspect `ps2xRuntime/CMakeLists.txt` and perform two operations (Inject `-msse4.1` and remove Unity Build).  
+> **⚠️ HUMAN-IN-THE-LOOP (HITL) REQUIRED:** Before you execute ANY modification to `CMakeLists.txt` or before you delete an existing `build/` folder to reconfigure, you MUST explain your exact plan to the user and **ask for explicit permission** to proceed. Do NOT act without confirmation.
+> *Full details: `references/03-ps2recomp-pipeline.md` → Section 4, "CMakeLists.txt Surgery"*
 
 1. Move the generated files to `ps2xRuntime/src/runner/`.
 2. Do NOT ask the user to compile or run the game manually. You are autonomous.

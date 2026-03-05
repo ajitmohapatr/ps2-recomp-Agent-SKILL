@@ -85,13 +85,13 @@ If execution hits this code path, the program will likely crash or behave incorr
 
 ## 4. Build Toolchain Optimization (CRITICAL)
 
-PS2Recomp generates **thousands** of C++ files (29,000+ for large games). The build toolchain choice has a **massive** impact on compile time:
+PS2Recomp generates **thousands** of C++ files (29,000+ for large games). The build toolchain choice is **not optional**:
 
-| Toolchain            | Generator                    | Approx. Full Build Time | Notes                             |
-| -------------------- | ---------------------------- | ----------------------- | --------------------------------- |
-| **Clang-CL + Ninja** | `-G Ninja` + clang-cl        | **~1 hour**             | ⚡ Best. Install via VS Installer. |
-| MSVC + Ninja         | `-G Ninja`                   | ~3-5 hours              | Good. Ninja parallelizes well.    |
-| MSVC + VS Solution   | `-G "Visual Studio 17 2022"` | ~20-25 hours            | ❌ Avoid. Serial bottleneck.       |
+| Toolchain            | Generator                    | Approx. Full Build Time | Status                                                   |
+| -------------------- | ---------------------------- | ----------------------- | -------------------------------------------------------- |
+| **Clang-CL + Ninja** | `-G Ninja` + clang-cl        | **~1 hour**             | ⚡ **MANDATORY**                                          |
+| MSVC + Ninja         | `-G Ninja`                   | ~3-5 hours              | ⚠️ Acceptable only temporarily                            |
+| MSVC + VS Solution   | `-G "Visual Studio 17 2022"` | ~20-25 hours            | ❌ **FORBIDDEN** — `build_daemon.ps1` refuses this config |
 
 ### How to Install Clang + Ninja (via Visual Studio Installer)
 1. Open **Visual Studio Installer** → Modify your VS 2022 installation.
@@ -102,18 +102,47 @@ PS2Recomp generates **thousands** of C++ files (29,000+ for large games). The bu
 4. Click **Modify** and wait for installation.
 5. Restart your terminal. `clang-cl --version` and `ninja --version` should both work.
 
-The `build_daemon.ps1` script auto-detects the best available toolchain. If it falls back to MSVC + VS Solution, the agent MUST warn the user to install Clang/Ninja.
+### CMakeLists.txt Surgery (MANDATORY for Clang compatibility)
+> **⚠️ HUMAN-IN-THE-LOOP REQUIRED:** The agent MUST explain the exact changes below to the user and **ask for permission** before modifying `CMakeLists.txt`.
 
-### CMake Configuration for Clang+Ninja
-```bash
-# Inside the vcvars64.bat environment:
-cmake -S . -B build -G Ninja -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl
-cmake --build build --config Debug
+Before building with Clang, the agent must inspect `ps2xRuntime/CMakeLists.txt` and perform these two operations:
+
+**OPERATION A — SSE4.1 Hardware Flag Injection:**
+Find the line `add_compile_definitions(USE_SSE41=ON)` and add immediately BELOW it:
+```cmake
+add_compile_options(-msse4.1)
 ```
+*Why:* `add_compile_definitions` only defines a preprocessor macro. MSVC implicitly supports SSE4.1 on x64, but Clang requires the explicit `-msse4.1` flag or it will error on intrinsics like `_mm_extract_epi32`.
 
-### Important: Reconfiguring an Existing Build
-If the project was previously configured with a different generator (e.g., Visual Studio), you **must delete the `build/` directory** before reconfiguring with Ninja:
+**OPERATION B — Unity Build & MSVC Flag Removal:**
+Search for and DELETE this entire block from the `ps2EntryRunner` target (if present):
+```cmake
+set_target_properties(ps2EntryRunner PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 16)
+if(MSVC)
+    target_compile_options(ps2EntryRunner PRIVATE /FS /Z7 /MP /bigobj)
+endif()
+```
+*Why:* Unity Build merges .cpp files into combined translation units — counterproductive with Ninja's native parallelism across 29,000 files. The `/FS /Z7 /MP /bigobj` flags are MSVC-only and will cause errors with Clang.
+
+### CMake Configuration & Build Commands
 ```powershell
+# STEP 1: Delete any old build directory (critical if switching generators!)
+# ⚠️ HITL REQUIRED: The agent MUST ask the user for permission before deleting the build/ folder.
 Remove-Item -Recurse -Force .\ps2xRuntime\build
-# Then re-run build_daemon.ps1 — it will auto-detect and reconfigure
+
+# STEP 2: Configure with Clang + Ninja (inside vcvars64.bat environment)
+cmake -B build -G Ninja -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Release
+
+# STEP 3: Build with parallel threads (leave 2 cores free to prevent system freeze)
+cmake --build build -j $([Environment]::ProcessorCount - 2)
 ```
+
+> **IMPORTANT:** With Ninja (single-config generator), build type is set at CONFIGURE time via `-DCMAKE_BUILD_TYPE=Release`, NOT at build time via `--config`. This is different from VS Solution generators.
+
+### The `build_daemon.ps1` Script
+The `build_daemon.ps1` script handles all of the above automatically:
+- Locates `vcvars64.bat` dynamically via `vswhere.exe`
+- Verifies Clang-CL + Ninja are both present (REFUSES to proceed otherwise)
+- Configures with Ninja + clang-cl if no `build/` directory exists
+- The agent must still perform the CMakeLists.txt Surgery (Operations A and B) ONCE before the first build
+

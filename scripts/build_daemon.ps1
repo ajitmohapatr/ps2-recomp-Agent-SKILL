@@ -2,31 +2,24 @@
 .SYNOPSIS
 Autonomous build script for PS2xRuntime to be used by LLM agents.
 .DESCRIPTION
-Invokes CMake + Ninja (preferred) or MSBuild via Visual Studio Developer Command Prompt
-in the background and streams the output. If a compilation error occurs, the agent can parse it.
-
-The script auto-detects the best available toolchain:
-  1. Clang-CL + Ninja  (FASTEST — 25x speedup on 29,000+ files)
-  2. MSVC + Ninja       (fast, good parallelism)
-  3. MSVC + VS Solution  (slowest fallback)
+Invokes CMake + Clang-CL + Ninja via Visual Studio Developer Command Prompt.
+REFUSES to compile with vanilla MSVC — Clang+Ninja are MANDATORY.
 
 .EXAMPLE
-.\build_daemon.ps1 -SourceDir ".\ps2xRuntime"
+.\build_daemon.ps1 -SourceDir "C:\Users\Joe\Desktop\ps2xRuntime"
 .\build_daemon.ps1 -SourceDir ".\ps2xRuntime" -BuildType Release
-.\build_daemon.ps1 -SourceDir ".\ps2xRuntime" -ForceGenerator "Visual Studio 17 2022"
 #>
 
 param(
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory = $true)]
     [string]$SourceDir,
-    [string]$BuildType = "Debug",
-    [string]$ForceGenerator = ""   # Override auto-detection (e.g. "Visual Studio 17 2022")
+    [string]$BuildType = "Debug"
 )
 
-# ── Locate vcvars64.bat (dynamic, supports ANY VS install location) ──
+# ── Locate vcvars64.bat (dynamic — supports ANY VS install location) ──
 $vcvars = $null
 
-# Method 1: vswhere.exe (works even if VS is installed to D:\ or custom paths)
+# Method 1: vswhere.exe (works even if VS is on D:\ or custom paths)
 $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
 if (Test-Path $vswhere) {
     $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath 2>$null
@@ -38,7 +31,7 @@ if (Test-Path $vswhere) {
     }
 }
 
-# Method 2: Fallback to hardcoded standard paths (covers edge cases where vswhere is missing)
+# Method 2: Fallback to standard paths
 if (-not $vcvars) {
     $fallbackPaths = @(
         "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat",
@@ -58,52 +51,44 @@ if (-not $vcvars) {
     exit 1
 }
 
-# ── Detect best toolchain ────────────────────────────────────────────
-$generator = ""
-$cmakeExtra = ""
+# ── MANDATORY: Verify Clang-CL + Ninja ──────────────────────────────
+$hasNinja = $null -ne (Get-Command ninja -ErrorAction SilentlyContinue)
+$hasClang = $null -ne (Get-Command clang-cl -ErrorAction SilentlyContinue)
 
-if ($ForceGenerator -ne "") {
-    Write-Host "[Build-Daemon] Using FORCED generator: $ForceGenerator"
-    $generator = $ForceGenerator
-    if ($ForceGenerator -like "*Visual Studio*") {
-        $cmakeExtra = "-A x64"
+if (-not $hasClang -or -not $hasNinja) {
+    Write-Error "[Build-Daemon] ❌ FATAL: Clang-CL and Ninja are MANDATORY for PS2Recomp builds."
+    Write-Host ""
+    if (-not $hasClang) {
+        Write-Host "[Build-Daemon] MISSING: clang-cl"
+        Write-Host "  → Open Visual Studio Installer → Individual Components → enable 'C++ Clang Compiler for Windows'"
     }
-}
-else {
-    # Auto-detect: prefer Clang+Ninja > MSVC+Ninja > MSVC+VS
-    $hasNinja = $null -ne (Get-Command ninja -ErrorAction SilentlyContinue)
-    $hasClang = $null -ne (Get-Command clang-cl -ErrorAction SilentlyContinue)
-
-    if ($hasNinja -and $hasClang) {
-        Write-Host "[Build-Daemon] ⚡ TURBO MODE: Clang-CL + Ninja detected. This is the fastest configuration."
-        $generator = "Ninja"
-        $cmakeExtra = "-DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl"
+    if (-not $hasNinja) {
+        Write-Host "[Build-Daemon] MISSING: ninja"
+        Write-Host "  → Open Visual Studio Installer → Individual Components → enable 'C++ CMake tools for Windows'"
     }
-    elseif ($hasNinja) {
-        Write-Host "[Build-Daemon] 🔧 Ninja detected (MSVC backend). Good parallelism."
-        $generator = "Ninja"
-    }
-    else {
-        Write-Host "[Build-Daemon] ⚠️  Ninja/Clang not found. Falling back to Visual Studio solution (SLOW)."
-        Write-Host "[Build-Daemon] TIP: Install 'C++ Clang Compiler for Windows' and 'Ninja' via Visual Studio Installer for 25x faster builds."
-        $generator = "Visual Studio 17 2022"
-        $cmakeExtra = "-A x64"
-    }
+    Write-Host ""
+    Write-Host "[Build-Daemon] After installing, restart your terminal and re-run this script."
+    Write-Host "[Build-Daemon] Vanilla MSVC takes 25+ hours for 29,000 files. Clang+Ninja does it in ~1 hour."
+    exit 1
 }
 
-Write-Host "[Build-Daemon] Compiling $SourceDir using $generator ..."
+Write-Host "[Build-Daemon] ⚡ TURBO MODE: Clang-CL + Ninja confirmed."
+Write-Host "[Build-Daemon] Compiling $SourceDir ..."
 Write-Host "[Build-Daemon] WARNING: Heavy CPU usage incoming. Keep .h modifications to an absolute minimum."
 
 # ── Build ────────────────────────────────────────────────────────────
 $cmd = "call `"$vcvars`" && cd /d `"$SourceDir`""
 
-# Configure if build/ doesn't exist or if generator changed
 if (-not (Test-Path "$SourceDir\build")) {
     Write-Host "[Build-Daemon] build/ directory not found. Running CMake configure..."
-    $cmd += " && cmake -S . -B build -G `"$generator`" $cmakeExtra"
+    $cmd += " && cmake -S . -B build -G `"Ninja`" -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=$BuildType"
 }
 
-$cmd += " && cd build && cmake --build . --config $BuildType"
+# Smart thread count: leave 2 cores free to prevent system freeze
+$threads = [Math]::Max(1, [Environment]::ProcessorCount - 2)
+Write-Host "[Build-Daemon] Using $threads parallel threads (CPU cores: $([Environment]::ProcessorCount), reserved: 2)"
+
+$cmd += " && cd build && cmake --build . -j $threads"
 
 cmd.exe /c $cmd
 
