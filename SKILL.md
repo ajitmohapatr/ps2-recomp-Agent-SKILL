@@ -55,17 +55,30 @@ Because LLM context windows degrade and blur over long compilation/debugging ses
    *Once inferred, create the `PS2_PROJECT_STATE.md` file from `scripts/project-state-template.md` and fill it with your deduced reality.*
 3. **Context Self-Awareness (Anti-Lobotomization):** LLMs degrade over long sessions. If you have been compiling, debugging, and looping for many turns, your context window is filling up. YOU MUST PROACTIVELY WARN THE USER. Say: *"⚠️ Context Degradation Warning: This chat is getting too long and I risk hallucinating. Please open a BRAND NEW CHAT WINDOW and use the 'Scenario C: Warm Resume' prompt from the README to continue safely."* Do this BEFORE you start making stupid mistakes.
 4. **Never guess past state.** If you forgot what address you were debugging, do not hallucinate it. Read the state file or the most recent `[game_name].toml`.
-5. **Log Everything.** After *any* major action (compiling, changing TOML, registering an override), you MUST update `PS2_PROJECT_STATE.md`. It is your external hippocampus. Use `replace_file_content` to keep it updated.
+5. **Log Everything (Structured Tabular Tracking).** After *any* major action (compiling, changing TOML, registering an override), you MUST update `PS2_PROJECT_STATE.md`. It is your external hippocampus. Use `replace_file_content` to keep it updated.
+   - **MANDATORY:** `PS2_PROJECT_STATE.md` must contain a strictly structured Markdown Table of **"Unique Crashes & Subsystem Map"**.
+   - Columns must include: `Crash Address/PC`, `Subsystem (CDVD/SIF/etc)`, `Callstack/Context`, `Proposed Fix Type (Override vs Runtime)`, `Regression Status`, and `Resolution`.
+   - Do NOT just dump unstructured text paragraphs into the state file. Cluster similar errors and map them to their root cause.
 
 ## 🛠️ The PS2Recomp Master Workflow
 
 Assess the current phase from `PS2_PROJECT_STATE.md` and execute the associated actions:
 
 ### 🧩 THE ARCHITECT'S DECISION TREE (CRITICAL FOR CRASHES)
-If you find a Null Pointer, an Infinite Loop, or a crash inside `runner/*.cpp`, follow this EXACT decision tree:
+If you find a Null Pointer, an Infinite Loop, or a crash inside `runner/*.cpp`, follow this EXACT decision tree BEFORE WRITING ANY C++ CODE:
+
+**Step 1: Diagnostics (Do not skip)**
+- **Extract Callstack:** Use the log to find the exact PC that crashed and its caller (RA).
+- **Subsystem Classifier:** Determine which PS2 subsystem is involved (CDVD, SIF/RPC, GS/Graphics, EE Timer, IOP audio, etc.) by looking at the memory address range or the stub name.
+
+**Step 2: Structural Fix Classification**
 1. **System/Env Failure?** (e.g., calling a missing Syscall, reading a CD, memory allocation failure) → Implement the missing logic in the high-level C++ runtime (`ps2xRuntime/src/lib/`).
 2. **Game-Specific Hardware Wait?** (e.g., spinning endlessly waiting for a DMA tag, a V-Sync, or an RPC response) → Use the `[game_name].toml` to REPLACE that specific MIPS function with a custom C++ **Game Override** that fakes the hardware response.
 3. **Recompiler Bug?** (MIPS poorly translated) → Again, write a Game Override for that specific function.
+
+**Step 3: Regression Awareness**
+- When pushing a fix, verify if it breaks previous milestones (e.g. "Does the CDVD module still load?"). You must track these in the state file.
+
 **NEVER PATCH `runner/*.cpp` FILES DIRECTLY. ALWAYS FIX THE ROOT CAUSE VIA RUNTIME C++ OR overrides.**
 
 ### Preflight Checklist (MANDATORY — Run at EVERY session start)
