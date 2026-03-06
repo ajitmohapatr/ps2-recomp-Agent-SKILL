@@ -31,7 +31,9 @@ def run_headless_test(exe_path, game_path, timeout_sec=15):
         [exe_path, game_path],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,  # Merge stderr into stdout
-        universal_newlines=True,
+        text=True,
+        encoding='utf-8',
+        errors='replace',
         creationflags=creationflags
     )
 
