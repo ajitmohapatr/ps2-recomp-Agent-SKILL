@@ -37,6 +37,24 @@ PHASE_SETUP
 - **Ghidra CSV Path**: <!-- path to exported function map, if any -->
 - **single_file_output**: <!-- true/false -->
 
+## Active Runner Command
+<!-- AGENT: Once absolute paths are established, write the exact log_reaper.py command here.
+     Never guess or reconstruct this command from memory. Read it and execute it verbatim.
+     Example (Windows):  python "E:\skills\ps2-recomp-Agent-SKILL\scripts\log_reaper.py" "E:\PS2Recomp\build\ps2xRuntime\ps2xRuntime.exe" "E:\games\game.iso" 15
+     Example (Linux/Mac): python3 "/home/user/skills/scripts/log_reaper.py" "/home/user/ps2recomp/build/ps2xRuntime" "/home/user/games/game.iso" 15
+-->
+<!-- ACTIVE RUNNER COMMAND: -->
+
+## Unique Crashes & Subsystem Map
+<!-- MANDATORY STRUCTURED TABLE. Agent must populate and update this after every crash/fix cycle.
+     Cluster similar errors. Never duplicate rows — update existing ones with new findings.
+     Proposed Fix Type: "Runtime C++" | "Game Override (TOML)" | "TOML Patch (nop)" | "Syscall Stub"
+     Regression Status: "Untested" | "OK" | "REGRESSED" | "N/A"
+-->
+| Crash Address/PC | Subsystem | Callstack/Context | Proposed Fix Type | Regression Status | Resolution |
+| ---------------- | --------- | ----------------- | ----------------- | ----------------- | ---------- |
+|                  |           |                   |                   |                   |            |
+
 ## Resolved Stubs
 <!-- Track every stub binding. Leave rows empty if none. -->
 | Address | Handler | Binding Method | Status | Notes |
