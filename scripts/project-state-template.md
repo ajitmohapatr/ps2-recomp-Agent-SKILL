@@ -56,18 +56,11 @@ PHASE_SETUP
 - **single_file_output**: <!-- true/false -->
 
 ## Active Runner Command
-<<<<<<< Updated upstream
-<!-- AGENT: Once absolute paths are established, write the exact log_reaper.py command here.
-     Never guess or reconstruct this command from memory. Read it and execute it verbatim.
-     Example (Windows):  python "E:\skills\ps2-recomp-Agent-SKILL\scripts\log_reaper.py" "E:\PS2Recomp\build\ps2xRuntime\ps2xRuntime.exe" "E:\games\game.iso" 15
-     Example (Linux/Mac): python3 "/home/user/skills/scripts/log_reaper.py" "/home/user/ps2recomp/build/ps2xRuntime" "/home/user/games/game.iso" 15
-=======
 <!-- AGENT: Once absolute paths are established, write the exact run command here.
      Never guess or reconstruct this command from memory. Read it and execute it verbatim.
      Example (Windows):  "E:\PS2Recomp\build\ps2xRuntime\ps2xRuntime.exe" "E:\games\game.iso"
      Example (Linux/Mac): "/home/user/ps2recomp/build/ps2xRuntime" "/home/user/games/game.iso"
      Use run_command with a timeout (WaitMsBeforeAsync). Kill via send_command_input if it hangs.
->>>>>>> Stashed changes
 -->
 <!-- ACTIVE RUNNER COMMAND: -->
 
