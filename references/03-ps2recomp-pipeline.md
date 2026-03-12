@@ -91,7 +91,7 @@ PS2Recomp generates **thousands** of C++ files (29,000+ for large games). The bu
 | -------------------- | ---------------------------- | ----------------------- | -------------------------------------------------------- |
 | **Clang-CL + Ninja** | `-G Ninja` + clang-cl        | **~1 hour**             | ⚡ **MANDATORY**                                          |
 | MSVC + Ninja         | `-G Ninja`                   | ~3-5 hours              | ⚠️ Acceptable only temporarily                            |
-| MSVC + VS Solution   | `-G "Visual Studio 17 2022"` | ~20-25 hours            | ❌ **FORBIDDEN** — `build_daemon.ps1` refuses this config |
+| MSVC + VS Solution   | `-G "Visual Studio 17 2022"` | ~20-25 hours            | ❌ **FORBIDDEN** — use Clang + Ninja |
 
 ### How to Install Clang + Ninja (via Visual Studio Installer)
 1. Open **Visual Studio Installer** → Modify your VS 2022 installation.
@@ -138,11 +138,4 @@ cmake --build build -j $([Environment]::ProcessorCount - 2)
 ```
 
 > **IMPORTANT:** With Ninja (single-config generator), build type is set at CONFIGURE time via `-DCMAKE_BUILD_TYPE=Release`, NOT at build time via `--config`. This is different from VS Solution generators.
-
-### The `build_daemon.ps1` Script
-The `build_daemon.ps1` script handles all of the above automatically:
-- Locates `vcvars64.bat` dynamically via `vswhere.exe`
-- Verifies Clang-CL + Ninja are both present (REFUSES to proceed otherwise)
-- Configures with Ninja + clang-cl if no `build/` directory exists
-- The agent must still perform the CMakeLists.txt Surgery (Operations A and B) ONCE before the first build
 

@@ -1,5 +1,23 @@
+<!-- ⛔ RULES — Re-read this section EVERY TIME you open this file. -->
+<!-- These rules also appear in the SKILL.md. Redundancy is intentional. -->
+
+# ⛔ QUICK RULES (mandatory re-read)
+
+1. **Build:** `cmake --build <build_dir>` — NEVER add `--clean-first`, `--target clean`, or delete the build directory.
+2. **Files:** NEVER modify `runner/*.cpp`. Fix in `src/lib/` or game overrides.
+3. **Headers:** NEVER modify `.h` without asking user. Triggers mass rebuild.
+4. **Git:** NEVER use destructive git commands (`checkout`, `clean`, `reset`, `stash`, `pull`).
+5. **Verify:** NEVER assume file names/paths. Use tools (`list_dir`, `find_by_name`, `grep_search`).
+
+---
+
 # PS2 Recomp — Project State
 > Auto-maintained by agent. DO NOT DELETE. Read at session start, update after every major action.
+
+## Boot Status
+- [ ] Loaded `03-ps2recomp-pipeline.md`
+- [ ] Loaded `04-runtime-syscalls-stubs.md`
+- [ ] Verified comprehension (3 questions answered)
 
 ## Game Info
 - **Title**: <!-- e.g. Star Wars Episode III -->
@@ -38,10 +56,18 @@ PHASE_SETUP
 - **single_file_output**: <!-- true/false -->
 
 ## Active Runner Command
+<<<<<<< Updated upstream
 <!-- AGENT: Once absolute paths are established, write the exact log_reaper.py command here.
      Never guess or reconstruct this command from memory. Read it and execute it verbatim.
      Example (Windows):  python "E:\skills\ps2-recomp-Agent-SKILL\scripts\log_reaper.py" "E:\PS2Recomp\build\ps2xRuntime\ps2xRuntime.exe" "E:\games\game.iso" 15
      Example (Linux/Mac): python3 "/home/user/skills/scripts/log_reaper.py" "/home/user/ps2recomp/build/ps2xRuntime" "/home/user/games/game.iso" 15
+=======
+<!-- AGENT: Once absolute paths are established, write the exact run command here.
+     Never guess or reconstruct this command from memory. Read it and execute it verbatim.
+     Example (Windows):  "E:\PS2Recomp\build\ps2xRuntime\ps2xRuntime.exe" "E:\games\game.iso"
+     Example (Linux/Mac): "/home/user/ps2recomp/build/ps2xRuntime" "/home/user/games/game.iso"
+     Use run_command with a timeout (WaitMsBeforeAsync). Kill via send_command_input if it hangs.
+>>>>>>> Stashed changes
 -->
 <!-- ACTIVE RUNNER COMMAND: -->
 
@@ -81,6 +107,11 @@ PHASE_SETUP
 
 ## Known Issues
 - [ ] <!-- Active issue description -->
+
+## Learned Patterns (Auto-growing)
+<!-- After each session, synthesize key discoveries here. These compound across sessions.
+     Write PATTERNS not events: "X causes Y, fix with Z" > "X happened".
+     This section is read at boot — it makes the next session smarter. -->
 
 ## Session Log
 <!-- Append new entries at the top. Each entry: date, actions, discoveries, current blocker -->
