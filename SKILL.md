@@ -21,7 +21,7 @@ This skill degrades as your context window fills. The following loop counteracts
 ### Continuous Loop (every session, every 5 turns)
 1. **Re-read** `PS2_PROJECT_STATE.md` in the user's project root — its header repeats the prohibitions.
 2. **Re-read** the `⛔ ABSOLUTE PROHIBITIONS` section below in this file.
-3. **Before ANY build command:** Re-read prohibition #1 below. The ONLY safe command is `cmake --build <build_dir>` with NO additional flags.
+3. **Before ANY build command:** Re-read prohibition #1 AND #9 below. The ONLY safe command is `cmake --build build64` from inside a **x64 Native Tools Command Prompt** environment.
 4. **Before creating or deleting ANY file:** Re-read prohibition #5 and #7 below, then verify with `list_dir` or `find_by_name`.
 5. **After ANY major action:** Update the user's `PS2_PROJECT_STATE.md` with what you did and the result.
 
@@ -59,12 +59,15 @@ Violating ANY of these is an immediate, unrecoverable failure. No exceptions.
 6. **NEVER claim code compiles without reading the build output.** Run `cmake --build build64` and verify exit code 0.
 7. **NEVER delete, overwrite, or clean ANY build artifact without asking the user first.** This includes object files, libraries, executables, and CMake cache.
 8. **NEVER use `> out.txt` or pipe build output to files.** Run the executable directly and read stdout.
+9. **NEVER run `cmake` outside a vcvars64 environment.** If you run `cmake --build build64` from a plain PowerShell/cmd, it WILL fail with missing SDK headers (`winresrc.h`, `windows.h`). You MUST be inside an **x64 Native Tools Command Prompt for VS** or wrap every cmake call with: `cmd.exe /c "call ""<vcvars64_path>"" && cmake --build build64"`
 
-## 🧠 MENTAL MODEL (3 Rules)
+## 🧠 MENTAL MODEL (5 Rules)
 
 1. **This is NOT emulation.** Original PS2 MIPS instructions have been statically recompiled into C++ source files (`ps2xRuntime/src/runner/*.cpp`). There is no emulation loop.
 2. **The Runtime Layer** (`ps2xRuntime/src/lib/`) is handwritten C++ that intercepts PS2 hardware calls (syscalls, memory, DMA, IOP) and translates them into native OS equivalents.
 3. **Your job:** Write runtime stubs, syscall implementations, and game-specific overrides. You do NOT touch the generated runner code.
+4. **The target is ALWAYS a Windows x64 executable.** The ideal toolchain is `clang-cl` (LLVM via Visual Studio) + `Ninja` + `Release` mode — this cuts a 25-hour MSVC build to ~1 hour. But the user may not have it yet. Your job is to **detect** the current config, **report** it, and **suggest** the optimal path if missing. Never assume.
+5. **The build environment is x64 Native Tools Command Prompt for VS.** Without it, Windows SDK headers are invisible to the compiler. This is non-negotiable regardless of which compiler is used (MSVC or clang-cl).
 
 ## ⚔️ ADVERSARIAL SPLIT — Mandatory for Code Changes
 
@@ -85,25 +88,37 @@ Skip this ONLY for trivial reads, greps, or state file updates. For **any code m
 Before writing or modifying ANY code, verify ALL of these:
 
 - [ ] Read `PS2_PROJECT_STATE.md` if it exists (or create it from `scripts/project-state-template.md`)
-- [ ] Confirm the build directory exists and is intact: `Test-Path build64/` or `ls build64/`
+- [ ] Confirm you are inside a **vcvars64** environment (check: `$env:VSINSTALLDIR` is set, or `where cl` returns a path)
+- [ ] Confirm the build directory exists and is intact (check `build64/` or `build/` — the name varies per project)
 - [ ] Confirm the file you're modifying is in `src/lib/` or is a game override — NOT in `runner/`
 - [ ] If modifying a `.h` file: **STOP and ask the user**
 - [ ] If the change adds a new `.cpp` file: verify it's picked up by `CMakeLists.txt` globs or add it
 
 After ANY code change:
-- [ ] Run `cmake --build build64` (incremental, never clean)
+- [ ] Run `cmake --build build64` (incremental, never clean) — **from vcvars64 environment**
 - [ ] Read the build output. Verify exit code 0. Fix errors before proceeding.
 - [ ] Update `PS2_PROJECT_STATE.md` with the change and result
 
 ## 🔧 OPERATIONAL WORKFLOW
 
 ### Phase 0 — Setup (`PHASE_SETUP`)
-1. Verify toolchain: `clang-cl --version`, `ninja --version`, `cmake --version`, `python --version`
-2. Build must use **Clang + Ninja**. Vanilla MSVC takes 25+ hours. Refuse to build without Ninja.
-3. Build from **x64 Native Tools Command Prompt** (Windows SDK env vars required).
+1. **Verify vcvars64 environment.** Test: `where cl` must return a path (NOT "not found"). If not, you MUST source it or wrap commands.
+2. **Detect build directory.** Look for `build64/` or `build/`. If found, read `CMakeCache.txt` and extract these 3 values:
+   - `CMAKE_GENERATOR` (Ninja? Visual Studio?)
+   - `CMAKE_CXX_COMPILER` (clang-cl? cl.exe/MSVC?)
+   - `CMAKE_BUILD_TYPE` (Release? Debug? empty?)
+3. **Report & suggest.** Tell the user what you found and rate it:
+   | Config | Rating | Agent Action |
+   |--------|--------|--------------|
+   | clang-cl + Ninja + Release | ⚡ Optimal | Use as-is. Do NOT reconfigure. |
+   | MSVC + Ninja | ⚠️ Acceptable | Suggest clang-cl upgrade (see `references/03-ps2recomp-pipeline.md` §4) |
+   | MSVC + VS Solution | ❌ Critical | **STRONGLY** recommend switching to Ninja+clang-cl. 25h→1h difference. |
+   | No build dir at all | 🆕 Fresh | Guide user through initial cmake configure (see pipeline reference). |
+   
+   **NEVER reconfigure or delete the build directory without explicit user approval.** Only suggest; let the user decide.
 4. Verify `ps2_analyzer` and `ps2_recomp` executables exist. Build if missing.
 5. Extract main ELF from ISO.
-   **Exit:** Toolchain verified, ELF extracted.
+   **Exit:** Toolchain verified, build config reported, ELF extracted.
 
 ### Phase 1 — ELF Analysis (`PHASE_ELF_ANALYSIS`)
 1. Run `ps2_analyzer` on the ELF → generates `[game].toml`.
@@ -122,7 +137,7 @@ After ANY code change:
 
 ### Phase 4 — Build & Runtime (`PHASE_RUNTIME_BUILD`)
 1. Move generated files to `ps2xRuntime/src/runner/`.
-2. Build: `cmake --build build64` — **INCREMENTAL ONLY.**
+2. Build: `cmake --build build64` — **INCREMENTAL ONLY, from vcvars64 environment.**
 3. If build fails: read error, fix C++ code, rebuild. Do not ask user to compile.
 4. Run the executable directly (command stored in `PS2_PROJECT_STATE.md`). Use `run_command` with a timeout.
 5. Write game overrides following `examples/game-override-template.cpp`.

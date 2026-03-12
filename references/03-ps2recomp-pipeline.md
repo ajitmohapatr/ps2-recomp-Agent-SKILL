@@ -89,7 +89,7 @@ PS2Recomp generates **thousands** of C++ files (29,000+ for large games). The bu
 
 | Toolchain            | Generator                    | Approx. Full Build Time | Status                                                   |
 | -------------------- | ---------------------------- | ----------------------- | -------------------------------------------------------- |
-| **Clang-CL + Ninja** | `-G Ninja` + clang-cl        | **~1 hour**             | ⚡ **MANDATORY**                                          |
+| **Clang-CL + Ninja** | `-G Ninja` + clang-cl        | **~1 hour**             | ⚡ **MANDATORY — already configured in `build64/`**   |
 | MSVC + Ninja         | `-G Ninja`                   | ~3-5 hours              | ⚠️ Acceptable only temporarily                            |
 | MSVC + VS Solution   | `-G "Visual Studio 17 2022"` | ~20-25 hours            | ❌ **FORBIDDEN** — use Clang + Ninja |
 
@@ -125,16 +125,46 @@ endif()
 *Why:* Unity Build merges .cpp files into combined translation units — counterproductive with Ninja's native parallelism across 29,000 files. The `/FS /Z7 /MP /bigobj` flags are MSVC-only and will cause errors with Clang.
 
 ### CMake Configuration & Build Commands
+
+#### Step 1: Detect Current Config
+Before ANY build, scan the existing build directory (typically `build64/` or `build/`):
 ```powershell
-# STEP 1: Delete any old build directory (critical if switching generators!)
-# ⚠️ HITL REQUIRED: The agent MUST ask the user for permission before deleting the build/ folder.
-Remove-Item -Recurse -Force .\ps2xRuntime\build
+# Read these 3 lines from CMakeCache.txt:
+Select-String "CMAKE_GENERATOR:|CMAKE_CXX_COMPILER:|CMAKE_BUILD_TYPE:" build64/CMakeCache.txt
+```
 
-# STEP 2: Configure with Clang + Ninja (inside vcvars64.bat environment)
-cmake -B build -G Ninja -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Release
+#### Step 2: Rate & Report to User
+| What you found | Rating | What to tell the user |
+|----------------|--------|-----------------------|
+| `Ninja` + `clang-cl` + `Release` | ⚡ Optimal | *"Your build is already optimized. I'll use it as-is."* |
+| `Ninja` + `cl.exe` (MSVC) | ⚠️ OK | *"You're using Ninja but with MSVC. Switching to clang-cl could cut build time significantly. Want me to show how?"* |
+| `Visual Studio *` generator | ❌ Slow | *"You're on the VS Solution generator — a full build takes 20-25 hours. Switching to Ninja+clang-cl drops it to ~1 hour. This requires deleting the build/ folder and reconfiguring. Want me to guide you?"* |
+| No build dir | 🆕 Fresh | *"No build directory found. I'll help you configure from scratch with the fastest setup."* |
 
-# STEP 3: Build with parallel threads (leave 2 cores free to prevent system freeze)
-cmake --build build -j $([Environment]::ProcessorCount - 2)
+**NEVER delete or reconfigure without the user's explicit OK.** Only suggest.
+
+#### Step 3: Incremental Build (safe for any config)
+```powershell
+# Adapt the build dir name to whatever exists (build64/ or build/):
+cmake --build build64
+
+# If NOT inside x64 Native Tools Command Prompt, wrap it:
+cmd.exe /c "call ""C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"" && cmake --build build64"
+```
+
+#### Step 4: First-Time or Reconfiguration (user approved only)
+> ⚠️ **HITL REQUIRED:** These commands delete the build cache. Ask the user FIRST.
+```powershell
+# Must be inside x64 Native Tools Command Prompt!
+
+# Optionally delete existing build dir (ONLY if switching generators):
+Remove-Item -Recurse -Force .\build64
+
+# Configure with Clang + Ninja (optimal):
+cmake -B build64 -G Ninja -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Release
+
+# Build with max parallelism (leave 2 cores free):
+cmake --build build64 -j $([Environment]::ProcessorCount - 2)
 ```
 
 > **IMPORTANT:** With Ninja (single-config generator), build type is set at CONFIGURE time via `-DCMAKE_BUILD_TYPE=Release`, NOT at build time via `--config`. This is different from VS Solution generators.
