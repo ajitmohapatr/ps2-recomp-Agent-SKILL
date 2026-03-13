@@ -29,9 +29,10 @@ This skill degrades as your context window fills. The following loop counteracts
 ### Continuous Loop (every session, every 5 turns)
 1. **Re-read** `PS2_PROJECT_STATE.md` in the user's project root — its header repeats the prohibitions.
 2. **Re-read** the `⛔ ABSOLUTE PROHIBITIONS` section below in this file.
-3. **Before ANY build command:** Re-read prohibition #1 AND #9 below. The ONLY safe command is `cmake --build build64` from inside a **x64 Native Tools Command Prompt** environment.
-4. **Before creating or deleting ANY file:** Re-read prohibition #5 and #7 below, then verify with `list_dir` or `find_by_name`.
-5. **After ANY major action:** Update the user's `PS2_PROJECT_STATE.md` with what you did and the result.
+3. **Re-read** the `🎯 PROBLEM RESOLUTION` section — especially the Fix Taxonomy (4 tools) and Decision Flowchart. This is the reasoning engine; don't let it fade.
+4. **Before ANY build command:** Re-read prohibition #1 AND #9 below. The ONLY safe command is `cmake --build build64` from inside a **x64 Native Tools Command Prompt** environment.
+5. **Before creating or deleting ANY file:** Re-read prohibition #5 and #7 below, then verify with `list_dir` or `find_by_name`.
+6. **After ANY major action:** Update the user's `PS2_PROJECT_STATE.md` with what you did and the result.
 
 **This creates a loop: SKILL → state file → SKILL. Follow it.**
 
@@ -49,6 +50,17 @@ Before doing ANY work, you MUST load the pipeline knowledge. Rules without domai
 If you cannot answer all 3, re-read the files. Do NOT proceed to any workflow phase until you can.
 
 Other references (`01`, `02`, `05`–`09`) are on-demand — load them when you need specific hardware, ISA, or Ghidra knowledge for a task.
+
+### Quick Anchor — The 4 Tools (memorize this)
+
+Every fix maps to exactly ONE of these. If it doesn't, you don't understand the problem yet.
+
+1. **TOML** → stub, skip, nop, patch (no C++ needed) → touches `game.toml`
+2. **Runtime C++** → implement PS2 hardware behavior → touches `ps2xRuntime/src/lib/*.cpp`
+3. **Game Override** → replace a broken recompiled function → touches `src/lib/game_overrides.cpp`
+4. **Recompiler** → regenerate runners after TOML changes → run `ps2_recomp`
+
+Core question: **"Is the translation wrong, or is the environment incomplete?"** → 95% environment.
 
 ## ⛔ ABSOLUTE PROHIBITIONS
 
