@@ -1,5 +1,7 @@
 # PS2 SDK Function Stub Database
 > Cross-reference of PS2 SDK library functions to their ps2xRuntime stub implementations.
+>
+> **See also**: `db-syscalls.md` (kernel-level syscalls these SDK functions call), `db-registers.md` (DMA/GIF/VIF registers these functions configure), `db-ps2-architecture.md` (DMA/GS/VU subsystem context).
 
 ## Lookup Protocol
 1. Match the imported function name from the ELF symbol table
@@ -528,6 +530,36 @@
 | Pad_init | nop | 0 | ps2_stubs_misc.inl | Game-specific variant |
 | Pad_set | nop | 0 | ps2_stubs_misc.inl | Game-specific variant |
 
+### Pad SPI Wire Protocol (DualShock)
+> Source: padspecs.txt — low-level SPI command/response format for scePadRead implementation.
+
+**Device Modes** (modeId high nibble):
+
+| Hi-nibble | Mode | Name |
+|-----------|------|------|
+| 4 | `0x41` | Digital (standard) |
+| 7 | `0x73`/`0x79` | Analog (DualShock) |
+| F | `0xF3` | Config mode |
+
+**Key SPI Commands** (sent byte 2):
+
+| Cmd | Name | Purpose |
+|-----|------|---------|
+| `0x42` | READ_DATA | Read button/stick state (main polling command) |
+| `0x43` | ENTER/EXIT_CONFIG | `0x01`=enter config, `0x00`=exit |
+| `0x44` | SET_MAIN_MODE | Set digital/analog mode + lock |
+| `0x45` | QUERY_MODEL | Returns model (01=DS1, 03=DS2), mode count |
+| `0x46` | QUERY_ACT | Query actuator (motor) capabilities |
+| `0x4D` | SET_ACT_ALIGN | Enable vibration motors |
+| `0x4F` | SET_BUTTON_INFO | Configure pressure-sensitive button mask |
+
+**READ_DATA (0x42) response format**:
+- Byte 0–1: `0xFF` + modeId
+- Byte 2: `0x5A` (constant)
+- Byte 3–4: Button status (1=released, 0=pressed)
+- Byte 5–8: Analog sticks (analog mode only)
+- Byte 9–20: Pressure values (pressure mode, 12 buttons)
+
 ---
 
 ## Font (`libfont`)
@@ -671,3 +703,76 @@ When a game calls an unimplemented SDK function:
    ```
 3. **Register it** in `ps2_stubs.cpp` dispatch table under the correct game section
 4. **For game-specific stubs**, create a new `ps2_stubs_<game>.inl` file
+
+---
+
+## PS2 Controller (PAD) Protocol Specs
+
+> Source: [RO]man / Florin Sasu (v1.0, 2004). Low-level SPI protocol for DualShock/DualShock2 controllers.
+
+### Device Modes (modeId)
+
+| Hi | Size | Lo | ModeId | Device |
+|----|------|----|--------|--------|
+| 4 | 5 | 1 | 0x41 | STANDARD (DIGITAL) |
+| 7 | 9,21 | 3/9 | 0x73/0x79 | ANALOG (DualShock) |
+| 1 | 7 | 2 | 0x12 | MOUSE |
+| 2 | 9 | 3 | 0x23 | NEGI-CON |
+| 5 | 9 | 3 | 0x53 | JOY STICK |
+| 3 | 5 | 1 | 0x31 | KONAMI-GUN |
+| 6 | 9 | 3 | 0x63 | NAMCO-GUN |
+| E | 9,13 | 3/5 | 0xE3/0xE5 | JOGCON |
+| F | 9 | 3 | 0xF3 | CONFIG |
+| 8 | — | — | 0x80 | MULTITAP |
+
+### Key SPI Commands
+
+| Cmd | Name | Description |
+|-----|------|-------------|
+| 0x40 | SET_VREF_PARAM | Set reference parameters (indexed) |
+| 0x41 | QUERY_BUTTON_MASK | Get button capability mask (4 bytes) |
+| 0x42 | READ_DATA | Read button + analog state |
+| 0x43 | ENTER/EXIT_CONFIG | 0x00=exit config, 0x01=enter config mode |
+| 0x44 | SET_MAIN_MODE | Set digital/analog mode + lock |
+| 0x45 | QUERY_MODEL | Query controller model/mode info |
+| 0x46 | QUERY_ACT | Query actuator (vibration motor) specs |
+| 0x47 | QUERY_COMB | Query actuator combination info |
+| 0x4C | QUERY_MODE | Query available modes |
+| 0x4D | SET_ACT_ALIGN | Set vibration motor alignment (enable rumble) |
+| 0x4F | SET_BUTTON_INFO | Set pressure-sensitive button mask |
+
+### Button Status Bits (cmd 0x42 response bytes 3–4)
+
+Bits are **active-low** (1=released, 0=pressed):
+
+| Byte 3 | Bit | Button | Byte 4 | Bit | Button |
+|--------|-----|--------|--------|-----|--------|
+| 3 | 0 | SELECT | 4 | 0 | L2 |
+| 3 | 1 | L3/LSTICK | 4 | 1 | R2 |
+| 3 | 2 | R3/RSTICK | 4 | 2 | L1 |
+| 3 | 3 | START | 4 | 3 | R1 |
+| 3 | 4 | UP | 4 | 4 | TRIANGLE |
+| 3 | 5 | RIGHT | 4 | 5 | CIRCLE |
+| 3 | 6 | DOWN | 4 | 6 | CROSS |
+| 3 | 7 | LEFT | 4 | 7 | SQUARE |
+
+### QUERY_MODEL Response (cmd 0x45)
+
+```
+Byte 3: model  — 0x01=DualShock, 0x03=DualShock2
+Byte 4: noOfModes — 0x02
+Byte 5: modeCurOffs — 0x00=digital, 0x01=analog
+Byte 6: noOfAct — 0x02 (DualShock), 0x01 (Joystick)
+Byte 7: noOfComb — 0x01
+```
+
+### Actuator Specs (cmd 0x46)
+
+```
+Idx 0 (small motor): function=1, subfunction=1, length=1, current=100mA
+Idx 1 (big motor):   function=1, subfunction=1, length=1, current=200mA
+```
+
+### SET_ACT_ALIGN (cmd 0x4D)
+`01,4D,00,00,01,FF,FF,FF,FF` — Maps act[0]=small motor (on/off), act[1]=big motor (variable speed).
+

@@ -6,7 +6,7 @@
 The user maintains a local repository of exhaustive PlayStation 2 documentation, including the legendary `ps2tek` (the reverse engineering holy grail), MIPS instruction set references, and Sony architectural analyses.
 
 **Location of Absolute Truth:**
-`references/09-ps2tek.md` (Embedded locally)
+`resources/09-ps2tek.md` (Embedded locally)
 
 If you ever find yourself stuck wondering:
 - "What exactly does bit 5 of the GS `TEX0` register do?"
@@ -22,7 +22,7 @@ You have two native tools. No scripts needed.
 
 ### 1. Text & Tables — `grep_search` + `view_file`
 
-The most important file is `references/09-ps2tek.md` (230KB+ of pure markdown).
+The most important file is `resources/09-ps2tek.md` (230KB+ of pure markdown).
 
 Use `grep_search` with highly specific queries (e.g., `TEX0`, `DMAC`, `SIFCMD`, `0x12000000`, `PMODE`) against this file. Once you find the right section, use `view_file` to read the surrounding context.
 
@@ -34,9 +34,14 @@ For PDF manuals in `resources/`, use `view_file` directly — it handles binary 
 - `mips_instruction_set_reference.pdf`
 - `PlayStation 2 Architecture _ A Practical Analysis.pdf` (16MB detailed analysis)
 
-### 2. Visual Diagrams — `view_file` on PDFs
+> **Note:** All PDF text content has been extracted into the `db-*.md` knowledge bases. PDFs are kept as backup and for visual diagrams.
 
-For block diagrams and architectural layouts, `view_file` on a PDF activates multimodal vision automatically. You can read diagrams directly — no extraction step needed.
+### 2. Visual Diagrams — Images & PDFs
+
+For block diagrams, pipeline schematics, and architectural layouts:
+
+1. **Classified images** (fastest): Check `resources/images/IMAGE_CATALOG.md` — it lists 80 extracted PNGs sorted by category (architecture, bus, pipeline, register, comparison). Each entry has filename, source PDF, and description.
+2. **PDFs** (fallback): `view_file` on a PDF activates multimodal vision automatically. You can read diagrams directly — no extraction step needed.
 
 ## The Golden Rule of PS2 Porting
 

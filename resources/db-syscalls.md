@@ -1,6 +1,8 @@
 # PS2 EE Syscall Database
 > Machine-readable reference for the PS2Recomp agent — maps EE kernel syscall numbers to runtime implementations and stub safety.
 > Ground truth: **ps2tek** (official PS2 hardware docs), cross-referenced with `ps2_syscalls.cpp` source.
+>
+> **See also**: `db-sdk-functions.md` (SDK library stubs that wrap these syscalls), `db-ps2-architecture.md` §9 (exception vectors + boot flow), `db-memory-map.md` (kernel memory areas).
 
 ## Lookup Protocol
 1. Find the syscall `$v1` number in the table below
@@ -191,3 +193,36 @@ SetAlarm(0x18) → iSetAlarm(0xFC/-0x1E) → ReleaseAlarm(0x19) → CancelAlarm(
 
 ### System / Boot
 Exit(0x04) → LoadExecPS2(0x06) → ExecPS2(0x07) → ExecOSD(0x7B) → QueryBootMode(0x5A) → ResetEE(0x01) → SetSyscall(0x74) → GetOsdConfigParam(0x79/0x4B) → SetOsdConfigParam(0x7E/0x4A)
+
+---
+
+## Stub Development Patterns
+
+### Triage Strategy for Unknown Functions
+When reverse engineering stripped games, hundreds of `Warning: Unimplemented PS2 stub called` messages appear. Instead of real implementations immediately, use triage stubs:
+
+```cpp
+void ret0(R5900Context& ctx) { ctx.gpr[2].words[0] = 0; } // Returns 0
+void ret1(R5900Context& ctx) { ctx.gpr[2].words[0] = 1; } // Returns 1
+void reta0(R5900Context& ctx) { ctx.gpr[2].words[0] = ctx.gpr[4].words[0]; } // Returns arg0
+```
+
+Try binding unknown functions to `ret0` or `ret1`. Does the game boot further? If yes, you bypassed a check. Identify what check it was later via Ghidra.
+
+### Syscall Debugging Workflow
+1. Identify the Syscall ID from runtime log (e.g., `Syscall 0x02 executing`)
+2. Look up in the table above or ps2dev docs to find the name (e.g., `GsPutDrawEnv`)
+3. Add a case statement in `ps2_syscalls.cpp` handler switch
+4. Implement logic, reading args from `ctx.gpr[4]` (a0), `ctx.gpr[5]` (a1), ...
+5. Return value goes in `ctx.gpr[2]` (v0)
+
+### Writing Real Implementations
+```cpp
+void my_sceCdRead(R5900Context& ctx) {
+    uint32_t lsn = ctx.gpr[4].words[0];        // a0: Logical Sector Number
+    uint32_t sectors = ctx.gpr[5].words[0];     // a1: Number of sectors
+    uint32_t buffer_ptr = ctx.gpr[6].words[0];  // a2: Destination in EE RAM
+    // Native C++ logic to read from PC filesystem
+    ctx.gpr[2].words[0] = 1; // Return 1 (success)
+}
+```

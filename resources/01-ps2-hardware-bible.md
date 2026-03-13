@@ -30,32 +30,34 @@ Not all games contain all MIPS code in a single ELF. Many large games (like Star
   - **COP2 (VU0 Macro Mode)**: Vector Unit 0 closely tied to EE pipeline.
 
 ### EE Memory Map
-| Address Range | Size | Description                                                             |
-| ------------- | ---- | ----------------------------------------------------------------------- |
-| `0x00000000`  | 32MB | Main RAM (RDRAM). Cached and accessible by EE. User memory mostly here. |
-| `0x10000000`  | 64KB | EE Hardware I/O Registers (Timers, INTC, DMAC, etc).                    |
-| `0x10002000`  | 4KB  | VU0 Micro Memory.                                                       |
-| `0x10003000`  | 16KB | VU1 Micro Memory.                                                       |
-| `0x10004000`  | 4KB  | VU0 Mem (VU0 instruction).                                              |
-| `0x10006000`  | 16KB | VU1 Mem (VU1 instruction).                                              |
-| `0x10008000`  | ...  | DMA Controller (DMAC) Registers (`0x10008000` - `0x1000E000`).          |
-| `0x12000000`  | 8KB  | GS Registers (Graphics Synthesizer mapping).                            |
-| `0x1FC00000`  | 4MB  | Boot ROM.                                                               |
+| Address Range | Size | Description                                                              |
+| ------------- | ---- | ------------------------------------------------------------------------ |
+| `0x00000000`  | 32MB | Main RAM (RDRAM). Cached and accessible by EE. User memory mostly here.  |
+| `0x10000000`  | 64KB | EE Hardware I/O Registers (Timers, INTC, DMAC, VIF, GIF, etc).           |
+| `0x10008000`  | ...  | DMA Controller (DMAC) Registers (`0x10008000`–`0x1000E0FF`).             |
+| `0x11000000`  | 16KB | VU0 Code Memory.                                                         |
+| `0x11004000`  | 16KB | VU0 Data Memory.                                                         |
+| `0x11008000`  | 16KB | VU1 Code Memory.                                                         |
+| `0x1100C000`  | 16KB | VU1 Data Memory.                                                         |
+| `0x12000000`  | 8KB  | GS Privileged Registers (Graphics Synthesizer mapping).                  |
+| `0x1C000000`  | 2MB  | IOP RAM.                                                                 |
+| `0x70000000`  | 16KB | Scratchpad RAM (fast uncached).                                          |
+| `0xBFC00000`  | 512KB| Boot ROM (BIOS).                                                         |
 
 *Note: Addresses above `0x20000000` mirror the lower 512MB space with different cache configurations (kseg0, kseg1).*
 
 ### The 10 DMA Channels (DMAC)
-Games aggressively transfer data to avoid starving the EE. Most `0x1000A...` addresses are DMA channels:
-- `0x1000A000` (CH0): VIF0 (To VU0)
-- `0x1000A010` (CH1): VIF1 (To VU1 / GS) -> *The main rendering pipeline*
-- `0x1000A020` (CH2): GIF (To GS directly) -> *Textures and UI*
-- `0x1000A030` (CH3): From IPU (MPEG Decoder)
-- `0x1000A040` (CH4): To IPU
-- `0x1000A050` (CH5): SIF0 (From IOP to EE)
-- `0x1000A060` (CH6): SIF1 (From EE to IOP)
-- `0x1000A070` (CH7): SIF2
-- `0x1000A080` (CH8): From SPR (Scratchpad RAM)
-- `0x1000A090` (CH9): To SPR (Scratchpad RAM)
+Games aggressively transfer data to avoid starving the EE. DMA channel registers span `0x10008000`–`0x1000D4FF`:
+- `0x10008000` (CH0): VIF0 (To VU0)
+- `0x10009000` (CH1): VIF1 (To VU1 / GS) -> *The main rendering pipeline*
+- `0x1000A000` (CH2): GIF (To GS directly) -> *Textures and UI*
+- `0x1000B000` (CH3): From IPU (MPEG Decoder)
+- `0x1000B400` (CH4): To IPU
+- `0x1000C000` (CH5): SIF0 (From IOP to EE)
+- `0x1000C400` (CH6): SIF1 (From EE to IOP)
+- `0x1000C800` (CH7): SIF2
+- `0x1000D000` (CH8): From SPR (Scratchpad RAM)
+- `0x1000D400` (CH9): To SPR (Scratchpad RAM)
 
 ## 4. Input/Output Processor (IOP) & SIF RPC
 - **Core**: MIPS R3000A (PS1 CPU).

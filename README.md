@@ -43,7 +43,7 @@ Copy-paste this **entire block** into your AI IDE (Cursor, Antigravity, Claude C
 
 ```text
 Read the skill file `ps2-recomp-Agent-SKILL/SKILL.md` and BOTH boot sequence references
-(`references/03-ps2recomp-pipeline.md` and `references/04-runtime-syscalls-stubs.md`).
+(`resources/03-ps2recomp-pipeline.md` and `resources/04-runtime-syscalls-stubs.md`).
 Do NOT proceed until you have read all three files.
 
 Then execute this startup sequence:

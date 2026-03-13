@@ -1,5 +1,8 @@
 # PS2 EE Memory Map
 > Complete address space layout for the PS2 Emotion Engine as modeled in ps2xRuntime.
+> **Sources**: EE User's Manual Version 6.0, ps2tek.md, `ps2_memory.cpp` runtime implementation.
+>
+> **See also**: `db-registers.md` (register bit-fields at these addresses), `db-ps2-architecture.md` §3 DMA channels, `db-ps2-architecture.md` §2 Cache/Scratchpad.
 
 ## Lookup Protocol
 1. Check the address against the ranges below
@@ -13,11 +16,26 @@
 | Start | End | Size | Region | Runtime Handling |
 |-------|-----|------|--------|-----------------|
 | `0x00000000` | `0x01FFFFFF` | 32 MB | **EE RDRAM** | `m_rdram[]` — main R/W memory |
-| `0x10000000` | `0x1000FFFF` | 64 KB | **EE Registers** | `m_ioRegisters{}` — see db-registers.md |
+| `0x10000000` | `0x10001FFF` | 8 KB | **EE Registers** | `m_ioRegisters{}` — see db-registers.md |
+| `0x10000000` | `0x10000FFF` | — | Timer registers | T0–T3 MODE/COUNT/COMP/HOLD |
 | `0x10002000` | `0x10002030` | — | IPU registers | Write handler with IPU reset logic |
+| `0x10003000` | `0x100030FF` | — | GIF registers | GIF_CTRL/MODE/STAT/TAG/CNT/P3CNT/P3TAG |
 | `0x10003800` | `0x100039FF` | — | VIF0 registers | Store-only |
 | `0x10003C00` | `0x10003DFF` | — | VIF1 registers | Full write handler for all VIF1 fields |
-| `0x10008000` | `0x1000DFFF` | — | DMA channels | DMA start handler (CHCR bit8) |
+| `0x10004000` | `0x10004FFF` | — | VIF0 FIFO | 128-bit write FIFO for VIF0 |
+| `0x10005000` | `0x10005FFF` | — | VIF1 FIFO | 128-bit write FIFO for VIF1 |
+| `0x10006000` | `0x10006FFF` | — | GIF FIFO | 128-bit write FIFO for GIF PATH3 |
+| `0x10007000` | `0x10007FFF` | — | IPU out FIFO | Read-back from IPU decode |
+| `0x10008000` | `0x10008FFF` | — | DMA ch0 (VIF0) | D0_CHCR/MADR/QWC/TADR at +0x00/+0x10/+0x20/+0x30 |
+| `0x10009000` | `0x10009FFF` | — | DMA ch1 (VIF1) | D1_CHCR/MADR/QWC/TADR |
+| `0x1000A000` | `0x1000AFFF` | — | DMA ch2 (GIF) | D2_CHCR/MADR/QWC/TADR |
+| `0x1000B000` | `0x1000B3FF` | — | DMA ch3 (IPU from) | D3_CHCR/MADR/QWC |
+| `0x1000B400` | `0x1000B7FF` | — | DMA ch4 (IPU to) | D4_CHCR/MADR/QWC/TADR |
+| `0x1000C000` | `0x1000CFFF` | — | DMA ch5 (SIF0) | D5_CHCR/MADR/QWC |
+| `0x1000C400` | `0x1000C7FF` | — | DMA ch6 (SIF1) | D6_CHCR/MADR/QWC/TADR |
+| `0x1000C800` | `0x1000CBFF` | — | DMA ch7 (SIF2) | D7_CHCR/MADR/QWC |
+| `0x1000D000` | `0x1000D3FF` | — | DMA ch8 (SPR from) | D8_CHCR/MADR/QWC/SADR |
+| `0x1000D400` | `0x1000D7FF` | — | DMA ch9 (SPR to) | D9_CHCR/MADR/QWC/TADR/SADR |
 | `0x1000E000` | `0x1000E0FF` | — | DMAC global | D_CTRL, D_STAT with W1C/toggle logic |
 | `0x1000F000` | `0x1000F010` | — | INTC | Interrupt controller (STAT, MASK) |
 | `0x1000F200` | `0x1000F260` | — | SIF registers | SIF_SMFLG/CTRL have hardcoded reads |
@@ -29,6 +47,7 @@
 | `0x1C000000` | `0x1C1FFFFF` | 2 MB | **IOP RAM** | `iop_ram[]` — allocated, zero-filled |
 | `0x70000000` | `0x70003FFF` | 16 KB | **Scratchpad** | `m_scratchpad[]` — fast R/W |
 | `0xBFC00000` | `0xBFC7FFFF` | 512 KB | **Boot ROM** | Not modeled |
+| `0x1FC00000` | `0x1FC7FFFF` | 512 KB | **Boot ROM** (KSEG0 alias) | Same physical ROM, different mapping |
 | (internal) | — | 4 MB | **GS VRAM** | `m_gsVRAM[]` — used by DMA GIF/VIF1 paths |
 
 ---
@@ -99,15 +118,26 @@ When CHCR.STR (bit 8) is written:
 
 ## ELF Loading Layout
 
-Typical PS2 game ELF sections mapped into RDRAM:
+### PS2 Executable Format
+- **Format**: ELF (Executable and Linking Format)
+- **Extension**: Often stripped — named `SLUS_XXX.XX` or `SLES_XXX.XX` instead of `.elf`
+- **Extraction**: Inside a PS2 ISO, the main ELF is listed in `SYSTEM.CNF` under `BOOT2`
+- **Entry Point**: Look at the ELF header. Typically `0x00100008` (skips the crt0 `nop`)
+
+### Key ELF Sections
 
 | Typical Range | Section | Notes |
 |---------------|---------|-------|
 | `0x00100000–0x001XXXXX` | `.text` | Game code (entry point usually here) |
-| `0x002XXXXX–0x003XXXXX` | `.data` / `.rodata` | Initialized data |
-| `0x004XXXXX–...` | `.bss` | Zero-initialized data |
+| `0x002XXXXX–0x003XXXXX` | `.data` / `.rodata` | Initialized data, read-only constants, string literals |
+| `0x004XXXXX–...` | `.bss` | Zero-initialized data (filled with 0 at runtime) |
 | `0x00FXXXXX–0x01FFFFFF` | Heap/Stack | Game-managed, grows from InitHeap |
 | `0x70000000` | SPR | Scratchpad (separate from RDRAM) |
 
 > [!NOTE]
 > Actual addresses vary per game. Use the ELF program headers (`readelf -l`) to determine exact mappings. The recompiler loads segments directly into `m_rdram`.
+
+### Multi-Binary Edge Case (.BIN files)
+Not all games contain all MIPS code in a single ELF. Many large games use a tiny 'launcher' ELF (~1 MB) that loads the actual game engine from a massive `.BIN` file containing raw, stripped MIPS bytecode directly into RAM.
+
+**What to do:** If the main ELF yields very few functions, look for large `.BIN` files in the ISO. These raw binaries must be converted into dummy ELF files (adding proper ELF headers and section mappings) so Ghidra and `ps2_analyzer` can process them independently.

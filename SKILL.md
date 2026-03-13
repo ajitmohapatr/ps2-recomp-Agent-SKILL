@@ -40,8 +40,8 @@ This skill degrades as your context window fills. The following loop counteracts
 
 Before doing ANY work, you MUST load the pipeline knowledge. Rules without domain understanding produce wrong decisions. You cannot skip this.
 
-1. **LOAD** `references/03-ps2recomp-pipeline.md` (in this skill's folder) — read it entirely.
-2. **LOAD** `references/04-runtime-syscalls-stubs.md` (in this skill's folder) — read it entirely.
+1. **LOAD** `resources/03-ps2recomp-pipeline.md` (in this skill's folder) — read it entirely.
+2. **LOAD** `resources/04-runtime-syscalls-stubs.md` (in this skill's folder) — read it entirely.
 3. **VERIFY** you can answer these 3 questions from what you just read:
    - What does `ps2_recomp` generate and where do those files go?
    - If a crash occurs inside a generated `out_*.cpp` file, where do you write the fix? (NOT in the `out_*.cpp` file)
@@ -51,7 +51,18 @@ If you cannot answer all 3, re-read the files. Do NOT proceed to any workflow ph
 
 Other references (`01`, `02`, `05`–`09`) are on-demand — load them when you need specific hardware, ISA, or Ghidra knowledge for a task.
 
-> **Knowledge Databases** (in `resources/`): When stubbing syscalls or SDK functions, consult `db-syscalls.md`, `db-sdk-functions.md`, `db-registers.md`, or `db-memory-map.md` first — they contain implementation status and parameter details.
+> **Knowledge Databases** (in `resources/`): Start with `db-ps2-index.md` — it's the **router** that maps any PS2 topic to the right db file. Use it to find which file to consult instead of guessing. The full set:
+>
+> | db File | When to use |
+> |---------|-------------|
+> | `db-ps2-index.md` | **Read first** — routes topics to the right file |
+> | `db-syscalls.md` | Stubbing/implementing EE syscalls |
+> | `db-sdk-functions.md` | Stubbing PS2 SDK library functions |
+> | `db-registers.md` | Hardware register addresses (GS, VIF, DMA, IPU, etc.) |
+> | `db-memory-map.md` | EE address space mapping and RDRAM layout |
+> | `db-isa.md` | MIPS R5900 instruction details (MMI, COP0, FPU) |
+> | `db-vu-instructions.md` | VU0/VU1 upper+lower instruction reference |
+> | `db-ps2-architecture.md` | Full PS2 hardware architecture (EE, GS, IOP, DMA) |
 
 ### Quick Anchor — The 4 Tools (memorize this)
 
@@ -333,7 +344,7 @@ After ANY code change:
    | Config | Rating | Agent Action |
    |--------|--------|--------------|
    | clang-cl + Ninja + Release | ⚡ Optimal | Use as-is. Do NOT reconfigure. |
-   | MSVC + Ninja | ⚠️ Acceptable | Suggest clang-cl upgrade (see `references/03-ps2recomp-pipeline.md` §4) |
+   | MSVC + Ninja | ⚠️ Acceptable | Suggest clang-cl upgrade (see `resources/03-ps2recomp-pipeline.md` §4) |
    | MSVC + VS Solution | ❌ Critical | **STRONGLY** recommend switching to Ninja+clang-cl. 25h→1h difference. |
    | No build dir at all | 🆕 Fresh | Guide user through initial cmake configure (see pipeline reference). |
    
@@ -412,7 +423,7 @@ If you attempt the same `compile → test → fail → guess → compile` loop *
 
 1. **STOP.** Do not guess again.
 2. Re-read `PS2_PROJECT_STATE.md`.
-3. Consult `references/09-ps2tek.md` or use GhydraMCP.
+3. Consult `resources/09-ps2tek.md` or use GhydraMCP.
 4. Search the web for community workarounds.
 5. If still stuck: format a specific technical question and **ask the user**.
 
@@ -431,18 +442,24 @@ Only load these files when you need specific knowledge. Do not pre-load all of t
 
 | File | Content |
 |---|---|
-| `references/01-ps2-hardware-bible.md` | Memory maps, I/O registers, EE/IOP architecture |
-| `references/02-mips-r5900-isa.md` | MIPS translation (MMI, COP0, FPU) to C++ |
-| `references/03-ps2recomp-pipeline.md` | `ps2_analyzer` / `ps2_recomp` CLI args, TOML schema |
-| `references/04-runtime-syscalls-stubs.md` | Syscall implementation, stubs, runtime overrides |
-| `references/05-ghidra-ghydramcp-guide.md` | Ghidra scripting, GhydraMCP usage |
-| `references/06-game-porting-playbook.md` | `sub_xxx` inference, triage strategies |
-| `references/07-ps2-code-patterns.md` | DMA, VIF, GS packets, CD/IOP loops |
-| `references/08-infinite-knowledge-base.md` | Instructions for searching `09-ps2tek.md` |
+| `resources/01-ps2-hardware-bible.md` | Memory maps, I/O registers, EE/IOP architecture |
+| `resources/02-mips-r5900-isa.md` | MIPS translation (MMI, COP0, FPU) to C++ |
+| `resources/03-ps2recomp-pipeline.md` | `ps2_analyzer` / `ps2_recomp` CLI args, TOML schema |
+| `resources/04-runtime-syscalls-stubs.md` | Syscall implementation, stubs, runtime overrides |
+| `resources/05-ghidra-ghydramcp-guide.md` | Ghidra scripting, GhydraMCP usage |
+| `resources/06-game-porting-playbook.md` | `sub_xxx` inference, triage strategies |
+| `resources/07-ps2-code-patterns.md` | DMA, VIF, GS packets, CD/IOP loops |
+| `resources/08-infinite-knowledge-base.md` | Instructions for searching `09-ps2tek.md` |
+| `resources/09-ps2tek.md` | 230 KB PS2 hardware holy grail — registers, SCMD, SIF, VIF, SPU2, everything |
+| `resources/db-ps2-index.md` | **Master router** — maps any PS2 topic to the right db file |
 | `resources/db-syscalls.md` | EE syscall table — numbers, params, return, impl status |
 | `resources/db-sdk-functions.md` | SDK function stubs — signatures, impl status, categories |
-| `resources/db-hwregs.md` | Hardware register map — IPU/VIF/DMA/GS addresses |
+| `resources/db-registers.md` | Hardware register map — IPU/VIF/DMA/GS addresses |
 | `resources/db-memory-map.md` | EE address space — RDRAM/IO/SPR/GS translation rules |
+| `resources/db-isa.md` | MIPS R5900 instruction encoding, operands, semantics |
+| `resources/db-vu-instructions.md` | VU0/VU1 upper+lower instructions, flags, broadcast rules |
+| `resources/db-ps2-architecture.md` | Full PS2 architecture — EE, GS, IOP, DMA, boot sequence |
+| `resources/images/IMAGE_CATALOG.md` | 80 classified hardware diagrams extracted from PDFs |
 
 ## 🧰 SCRIPTS & EXAMPLES
 
