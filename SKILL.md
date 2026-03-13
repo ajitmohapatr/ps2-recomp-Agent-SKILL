@@ -104,6 +104,119 @@ PS2 "ELF" binaries have **unpredictable naming**. The agent must know:
 
 **Multi-binary discovery happens in Phase 1** — you analyze the main binary first, then discover secondary binaries when the game tries to load them at runtime (crashes with "unrecognized function" or load errors pointing to addresses outside the main ELF range).
 
+---
+
+## 🎯 PROBLEM RESOLUTION — The Core Reasoning Engine
+
+> **This section is the HEART of the SKILL.** Read it before touching any code.
+> Every crash, every build error, every logic bug must pass through this decision framework.
+> If you skip it, you WILL end up manually patching generated .cpp files — which is ALWAYS wrong.
+
+### The Fix Taxonomy — Your 4 Tools
+
+You have exactly **4 tools** to fix anything. There is no 5th option. If you can't map a problem to one of these, you don't understand the problem yet.
+
+| # | Tool | What it does | When to use | Files touched |
+|---|------|-------------|-------------|---------------|
+| 1 | **TOML Config** | Declarative: stubs, skips, patches, nops | Function should be skipped, stubbed (ret0/ret1), or nop'd out. No C++ needed. | `game.toml` |
+| 2 | **Runtime C++** | Implements PS2 hardware in native code | Syscalls, DMA, GS, SPU, memory allocation, file I/O, timer, threading | `ps2xRuntime/src/lib/*.cpp` |
+| 3 | **Game Override** | Per-game C++ function replacing recompiled code | A recompiled function produces wrong behavior that can't be fixed at the runtime layer. Registered via `PS2_REGISTER_GAME_OVERRIDE`. | `ps2xRuntime/src/lib/game_overrides.cpp` |
+| 4 | **Re-run Recompiler** | Regenerate runner code from updated TOML | TOML stubs/patches changed, or new binary needs recompilation | `ps2_recomp` CLI → `output/*.cpp` |
+
+**NEVER**: edit `runner/*.cpp`, write inline assembly hacks, or bypass the architecture. If none of the 4 tools fit, STOP and ask the user.
+
+### The Decision Flowchart
+
+```
+PROBLEM ENCOUNTERED
+│
+├─ BUILD ERROR (compilation/link fails)
+│  ├─ Error is in runner/*.cpp?
+│  │  ├─ Unhandled opcode → TOML patch (nop the instruction) or re-run recompiler
+│  │  ├─ Missing symbol → Add stub in TOML, or implement in Runtime C++
+│  │  └─ NEVER edit the runner file directly
+│  ├─ Error is in src/lib/*.cpp?
+│  │  └─ Fix in Runtime C++ (this is YOUR code)
+│  └─ Linker error (undefined reference)?
+│     ├─ It's a PS2 SDK function → Stub in TOML or implement in Runtime C++
+│     └─ It's a Windows API → Fix includes/libs in CMake
+│
+├─ RUNTIME CRASH (exe crashes during execution)
+│  ├─ Read the crash address/PC
+│  ├─ Is the address inside the recompiled ELF range?
+│  │  ├─ YES → Recompiled game code hit something unhandled
+│  │  │  ├─ Unimplemented syscall → Implement in Runtime C++ (src/lib/)
+│  │  │  ├─ Calls a stub that returns wrong value → Change TOML stub type or write Game Override
+│  │  │  ├─ Hardware register access → Implement in Runtime C++ (GS/DMA/SPU layer)
+│  │  │  └─ Infinite loop / setup code → TOML skip or patch
+│  │  └─ NO → Address is OUTSIDE the recompiled range
+│  │     ├─ It's a secondary binary → Recompile that binary (Phase 1 again)
+│  │     ├─ It's a PS2 BIOS call → Runtime C++ syscall handler
+│  │     └─ It's a wild pointer → Investigate the CALLER, not the target
+│  └─ No crash address? (hang, infinite loop)
+│     ├─ Attach debugger or add trace logging in Runtime C++
+│     └─ Identify the loop → TOML skip/patch or Game Override
+│
+├─ WRONG BEHAVIOR (no crash, but game does wrong thing)
+│  ├─ Graphics wrong → Runtime C++ GS implementation
+│  ├─ Audio wrong → Runtime C++ SPU implementation
+│  ├─ File not found → Runtime C++ file I/O path mapping
+│  ├─ Game logic wrong → Game Override for the specific function
+│  └─ Performance issue → Profile, then optimize Runtime C++
+│
+└─ UNKNOWN / CAN'T DIAGNOSE
+   ├─ DON'T GUESS. Add trace logging to narrow the subsystem.
+   ├─ Use Ghidra to understand what the original MIPS code was doing.
+   └─ Ask the user for guidance.
+```
+
+### Root Cause Protocol — 5 Questions Before Writing Code
+
+Before writing ANY fix, answer these 5 questions **in order**. If you can't answer one, STOP — you need more information.
+
+1. **WHAT failed?** (exact error, crash address, symptom)
+2. **WHERE in the architecture?** (runner code? runtime layer? OS interface? game logic?)
+3. **WHY did it fail?** (missing implementation? wrong assumption? unhandled case?)
+4. **WHICH tool fixes this?** (TOML / Runtime C++ / Game Override / Recompiler — exactly ONE)
+5. **WHAT could break?** (your fix affects what other systems? regression risk?)
+
+If your answer to question 4 is "edit the runner .cpp" → **your answer to question 2 is WRONG.** Go back.
+
+### Red Flags — You're in the Wrong Layer
+
+If you catch yourself doing any of these, STOP IMMEDIATELY:
+
+| 🚩 Red Flag | Why it's wrong | Correct approach |
+|-------------|----------------|------------------|
+| Opening `runner/out_*.cpp` to edit it | Runner code is auto-generated. Your edit will be overwritten. | Fix via TOML stub, Runtime C++, or Game Override |
+| Writing `#ifdef` in runner code | You're trying to conditionalize generated code | Write a Game Override that replaces the function entirely |
+| Copy-pasting MIPS disassembly into C++ | You're reimplementing what the recompiler already did | Understand WHY the recompiled version doesn't work, fix the ROOT cause |
+| Adding `if (address == 0xXXXXXX) return;` in the runtime | You're patching a symptom, not the cause | Use TOML to stub/skip the function, or implement the missing subsystem |
+| Creating "adapter" functions between runner calls | You're fighting the calling convention | The recompiler handles calling conventions. If it's wrong, fix the TOML config. |
+| Spending >10 minutes on a single crash without a diagnosis | You're guessing, not reasoning | Follow the Decision Flowchart. Use Ghidra for context. Ask the user. |
+
+### Subsystem Map — Know Your Layers
+
+When a crash involves PS2 hardware, you need to know which Runtime C++ file handles it.
+**These are the REAL file names in `ps2xRuntime/src/lib/`:**
+
+| PS2 Subsystem | Address Range / Identifier | Runtime File(s) | Typical Symptoms |
+|---------------|----------------------------|-----------------|------------------|
+| **EE Core** (main CPU) | Recompiled code range | `ps2_runtime.cpp` + Runner code | Crashes in game logic |
+| **GS** (Graphics) | `0x12000000-0x12001FFF` | `ps2_gs_gpu.cpp`, `ps2_gs_rasterizer.cpp` | Black screen, wrong rendering |
+| **VU0/VU1** (Vector Units) | Inline in EE code | `ps2_vu1.cpp` + Runner (recompiled) | Wrong geometry, broken transforms |
+| **VIF1** (VU Interface) | `0x10003C00-0x10003FFF` | `ps2_vif1_interpreter.cpp` | VU data not arriving, bad geometry |
+| **GIF** (GS Interface) | `0x10003000-0x100037FF` | `ps2_gif_arbiter.cpp` | GS commands not reaching renderer |
+| **SPU2** (Audio) | IOP side | `ps2_audio.cpp`, `ps2_audio_vag.cpp` | No sound, crashes on audio init |
+| **IOP** (I/O Processor) | RPC calls, modules | `ps2_iop.cpp`, `ps2_iop_audio.cpp` | Hang during boot, module load fails |
+| **Pad** (Controller) | `0x1F801xxx` | `ps2_pad.cpp` | No input, wrong buttons |
+| **Syscalls** | `syscall` instruction | `ps2_syscalls.cpp` | Unimplemented syscall → crash |
+| **Stubs** | Stubbed functions | `ps2_stubs.cpp` | Missing SDK function → log + return 0 |
+| **Memory** | Kernel calls, TLB | `ps2_memory.cpp` | Segfault, invalid pointer |
+| **Game Overrides** | Specific functions per-game | `game_overrides.cpp` | Recompiled function behaves wrong |
+
+---
+
 ## ⚔️ ADVERSARIAL SPLIT — Mandatory for Code Changes
 
 Before writing ANY C++ fix, override, or stub, you MUST execute this 3-step structure:
@@ -167,10 +280,25 @@ After ANY code change:
    | No build dir at all | 🆕 Fresh | Guide user through initial cmake configure (see pipeline reference). |
    
    **NEVER reconfigure or delete the build directory without explicit user approval.** Only suggest; let the user decide.
-7. **Record both paths** in `PS2_PROJECT_STATE.md` under `## Workspace Paths`.
-8. Verify `ps2_analyzer` and `ps2_recomp` executables exist. Build if missing.
-9. Extract main ELF from ISO (if not already extracted).
-   **Exit:** Both workspaces identified, toolchain verified, build config reported, ELF located.
+7. **Verify build health.** A build directory can exist but be incomplete (e.g., obj files were deleted). Check:
+   ```powershell
+   # Does the final executable exist?
+   Test-Path build64/ps2xRuntime/ps2EntryRunner.exe          # True/False
+   # Are there compiled objects? (spot-check one .obj file)
+   (Get-ChildItem build64 -Recurse -Filter *.obj | Select-Object -First 1) -ne $null
+   ```
+   Report build status separately from config:
+   | Build Health | Meaning | Agent Action |
+   |--------------|---------|--------------|
+   | ✅ Complete | exe exists + obj files present | Ready to run |
+   | ⚠️ Needs rebuild | Config OK but exe or obj missing | Tell user: `cmake --build build64` needed |
+   | 🆕 Never built | Build dir exists but empty/no obj | Tell user: full build required (~1h with clang-cl) |
+   
+   **Do NOT auto-rebuild.** Report the status and ask the user how to proceed.
+8. **Record both paths** in `PS2_PROJECT_STATE.md` under `## Workspace Paths`.
+9. Verify `ps2_analyzer` and `ps2_recomp` executables exist. Build if missing.
+10. Extract main ELF from ISO (if not already extracted).
+   **Exit:** Both workspaces identified, toolchain verified, build health reported, ELF located.
 
 ### Phase 1 — ELF Analysis (`PHASE_ELF_ANALYSIS`)
 1. Run `ps2_analyzer` on the **main** ELF (from `SYSTEM.CNF` BOOT2 path) → generates `[game].toml`.
