@@ -55,7 +55,7 @@ Violating ANY of these is an immediate, unrecoverable failure. No exceptions.
 2. **NEVER modify `runner/*.cpp` files.** These are auto-generated from MIPS. The recompiler will overwrite your changes. Fix the runtime layer or write a game override instead.
 3. **NEVER modify `.h` header files without explicit user approval.** A header change triggers recompilation of every file that includes it — potentially thousands.
 4. **NEVER run destructive git commands.** No `git checkout`, `git clean`, `git reset`, `git stash`, `git pull`. Changes are local and permanent.
-5. **NEVER assume file names or paths.** Use `list_dir`, `find_by_name`, or `grep_search` to verify. Game assets vary per title (some have COREC.BIN, others don't; some have multiple SLES, others one).
+5. **NEVER assume file names or paths.** Use `list_dir`, `find_by_name`, or `grep_search` to verify. Game assets vary per title (some have COREC.BIN, others don't; some have multiple SLES, others one). **Also never assume game files are inside the PS2Recomp repo** — they are often in a separate game workspace directory (see Mental Model rule 6).
 6. **NEVER claim code compiles without reading the build output.** Run `cmake --build build64` and verify exit code 0.
 7. **NEVER delete, overwrite, or clean ANY build artifact without asking the user first.** This includes object files, libraries, executables, and CMake cache.
 8. **NEVER use `> out.txt` or pipe build output to files.** Run the executable directly and read stdout.
@@ -66,13 +66,43 @@ Violating ANY of these is an immediate, unrecoverable failure. No exceptions.
     - **Read ONE specific file:** `view_file` on a single known path like `runner/out_00100008.cpp`
     - **NEVER:** `list_dir("ps2xRuntime/src/runner")`, `find_by_name("*.cpp", runner)`, or any glob/search that could return thousands of results
 
-## 🧠 MENTAL MODEL (5 Rules)
+## 🧠 MENTAL MODEL (6 Rules)
 
 1. **This is NOT emulation.** Original PS2 MIPS instructions have been statically recompiled into C++ source files (`ps2xRuntime/src/runner/*.cpp`). There is no emulation loop.
 2. **The Runtime Layer** (`ps2xRuntime/src/lib/`) is handwritten C++ that intercepts PS2 hardware calls (syscalls, memory, DMA, IOP) and translates them into native OS equivalents.
 3. **Your job:** Write runtime stubs, syscall implementations, and game-specific overrides. You do NOT touch the generated runner code.
 4. **The target is ALWAYS a Windows x64 executable.** The ideal toolchain is `clang-cl` (LLVM via Visual Studio) + `Ninja` + `Release` mode — this cuts a 25-hour MSVC build to ~1 hour. But the user may not have it yet. Your job is to **detect** the current config, **report** it, and **suggest** the optimal path if missing. Never assume.
 5. **The build environment is x64 Native Tools Command Prompt for VS.** Without it, Windows SDK headers are invisible to the compiler. This is non-negotiable regardless of which compiler is used (MSVC or clang-cl).
+6. **Two workspaces, not one.** A PS2Recomp project typically has two separate directory trees:
+   - **PS2Recomp Repo** — the cloned repository containing `ps2xRecomp/`, `ps2xRuntime/`, `build64/`, CMake files. This is the **toolchain**.
+   - **Game Workspace** — a separate folder (often a sibling directory) containing the extracted ISO, ELF binaries, `.toml` configs, and recompiler output (`output/*.cpp`). Example layout:
+     ```
+     E:\Projects\
+     ├── PS2Recomp/        ← repo (toolchain + runtime + build)
+     └── RESWIII/          ← game workspace
+         ├── ISO_extracted/ ← extracted ISO contents
+         ├── game.toml      ← recompiler config
+         ├── SLES_531.55    ← ELF binary
+         └── output/        ← recompiled .cpp files
+     ```
+   Some devs keep everything inside PS2Recomp; others separate them. **Never assume** — ask or discover both paths at Phase 0. Record both in `PS2_PROJECT_STATE.md`.
+
+### PS2 Binary Naming — What You're Looking For
+PS2 "ELF" binaries have **unpredictable naming**. The agent must know:
+
+| What | Example | Extension | Notes |
+|------|---------|-----------|-------|
+| Main executable | `SLES_531.55`, `SLUS_210.01` | **NONE** (no `.elf`) | Always has an underscore + numbers. This IS an ELF binary. |
+| Secondary ELF | `icon.elf`, `icon00.elf` | `.elf` | Some games ship real `.elf` files alongside the main binary |
+| Hidden MIPS code | `COREC.BIN`, `IOPRP.IMG` | `.bin`, `.img`, etc. | Contains executable MIPS code but is NOT an ELF. Discovered during analysis when the main binary loads it. |
+| IOP modules | `*.IRX` | `.irx` | I/O Processor modules. Usually handled by the runtime, not recompiled. |
+
+**How to find the main binary:**
+1. Read `SYSTEM.CNF` in the extracted ISO root — it contains `BOOT2 = cdrom0:\SLES_531.55;1` (the main executable path)
+2. If no `SYSTEM.CNF`, look for files matching `SL[EU]S_*` or `SC[EU]S_*` patterns
+3. Check file size: main ELF is typically 2-50 MB, much larger than other files
+
+**Multi-binary discovery happens in Phase 1** — you analyze the main binary first, then discover secondary binaries when the game tries to load them at runtime (crashes with "unrecognized function" or load errors pointing to addresses outside the main ELF range).
 
 ## ⚔️ ADVERSARIAL SPLIT — Mandatory for Code Changes
 
@@ -107,17 +137,28 @@ After ANY code change:
 ## 🔧 OPERATIONAL WORKFLOW
 
 ### Phase 0 — Setup (`PHASE_SETUP`)
-1. **Verify vcvars64 environment.** Test: `where cl` must return a path (NOT "not found"). If not, you MUST source it or wrap commands.
-2. **Detect build directory.** Look for `build64/` or `build/`. If found, read `CMakeCache.txt` and extract these 3 values:
+1. **Discover both workspaces.** You need two paths:
+   - **PS2Recomp Repo** — contains `ps2xRecomp/`, `ps2xRuntime/`, `build64/`
+   - **Game Workspace** — contains extracted ISO, ELF files, `.toml` configs, recompiler `output/`
+   
+   These may be the same directory or siblings. Check for a `PS2_PROJECT_STATE.md` first — if it exists, read both paths from it. Otherwise, inspect the current directory and ask the user.
+2. **Verify vcvars64 environment.** Test: `where cl` must return a path (NOT "not found"). If not, you MUST source it or wrap commands.
+3. **Detect build directory** (in the PS2Recomp Repo). Look for `build64/` or `build/`. If found, read `CMakeCache.txt` and extract:
    - `CMAKE_GENERATOR` (Ninja? Visual Studio?)
    - `CMAKE_CXX_COMPILER` (clang-cl? cl.exe/MSVC?)
    - `CMAKE_BUILD_TYPE` (Release? Debug? empty?)
-3. **Check runner code exists (SAFELY).** Do NOT list the runner directory! Use:
+4. **Check runner code exists (SAFELY).** Do NOT list the runner directory! Use:
    ```powershell
    Test-Path ps2xRuntime/src/runner  # True/False
    (Get-ChildItem ps2xRuntime/src/runner -Filter *.cpp).Count  # e.g. 32000
    ```
-4. **Report & suggest.** Tell the user what you found and rate it:
+5. **Inspect the Game Workspace.** Search for:
+   - `SYSTEM.CNF` — if found, read it to discover the main executable name (`BOOT2 = ...`)
+   - `.toml` configs (the recompiler config — may be one per binary)
+   - PS2 binaries — look for `SL[EU]S_*`, `SC[EU]S_*`, `*.elf`, and files >2MB that could be MIPS code (like `COREC.BIN`)
+   - `output/` directory with generated `.cpp` files
+   - Extracted ISO folder structure
+6. **Report & suggest build config:**
    | Config | Rating | Agent Action |
    |--------|--------|--------------|
    | clang-cl + Ninja + Release | ⚡ Optimal | Use as-is. Do NOT reconfigure. |
@@ -126,14 +167,20 @@ After ANY code change:
    | No build dir at all | 🆕 Fresh | Guide user through initial cmake configure (see pipeline reference). |
    
    **NEVER reconfigure or delete the build directory without explicit user approval.** Only suggest; let the user decide.
-5. Verify `ps2_analyzer` and `ps2_recomp` executables exist. Build if missing.
-6. Extract main ELF from ISO.
-   **Exit:** Toolchain verified, build config reported, ELF extracted.
+7. **Record both paths** in `PS2_PROJECT_STATE.md` under `## Workspace Paths`.
+8. Verify `ps2_analyzer` and `ps2_recomp` executables exist. Build if missing.
+9. Extract main ELF from ISO (if not already extracted).
+   **Exit:** Both workspaces identified, toolchain verified, build config reported, ELF located.
 
 ### Phase 1 — ELF Analysis (`PHASE_ELF_ANALYSIS`)
-1. Run `ps2_analyzer` on the ELF → generates `[game].toml`.
+1. Run `ps2_analyzer` on the **main** ELF (from `SYSTEM.CNF` BOOT2 path) → generates `[game].toml`.
 2. If stripped, export Ghidra function map.
-   **Exit:** TOML exists with analyzer data.
+3. **Multi-binary check:** Ask the user if there are additional binaries to recompile (e.g., `COREC.BIN`). These are discovered when:
+   - The main binary references code at addresses outside its own range
+   - Runtime crashes point to "loaded" overlays or modules
+   - The user already knows from prior experience
+4. If secondary binaries exist, run `ps2_analyzer` on each → generates a separate TOML per binary.
+   **Exit:** All TOMLs exist with analyzer data. State file records each binary path.
 
 ### Phase 2 — TOML Configuration (`PHASE_TOML_CONFIG`)
 1. Map known addresses to `stubs` in TOML. See `examples/toml-config-template.toml` for syntax.

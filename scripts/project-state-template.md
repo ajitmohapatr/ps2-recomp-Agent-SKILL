@@ -22,11 +22,27 @@
 ## Game Info
 - **Title**: <!-- e.g. Star Wars Episode III -->
 - **Region**: <!-- NTSC-U / PAL / NTSC-J -->
-- **ELF Name**: <!-- e.g. SLUS_210.01 or SLES_527.37 -->
-- **ISO Path**: <!-- absolute path to extracted ISO -->
-- **ELF Path**: <!-- absolute path to main ELF binary -->
-- **Multi-Binary**: <!-- yes/no — some games have multiple ELFs -->
 - **Has Symbols**: <!-- yes/no/partial — affects analysis strategy -->
+
+## Workspace Paths
+<!-- CRITICAL: These are the two root paths the agent needs. 
+     They may be the same directory or separate siblings.
+     Phase 0 discovers these; resume sessions read them. -->
+- **PS2Recomp Repo**: <!-- absolute path to cloned PS2Recomp repo (contains ps2xRecomp/, ps2xRuntime/, build64/) -->
+- **Game Workspace**: <!-- absolute path to game-specific dir (contains ISO, ELF, .toml, output/) -->
+- **ISO Path**: <!-- absolute path to ISO file or extracted ISO directory -->
+- **Output Dir**: <!-- path to recompiler output .cpp files (often game_workspace/output/) -->
+
+## Binaries
+<!-- PS2 games can have MULTIPLE binaries that need recompilation.
+     The main executable is identified from SYSTEM.CNF (BOOT2 = ...).
+     Secondary binaries are discovered during analysis or at runtime.
+     IMPORTANT: SLES/SLUS files have NO .elf extension! COREC.BIN is MIPS code too! -->
+
+| Role | File Name | Type | Path | TOML Config | Status |
+|------|-----------|------|------|-------------|--------|
+| Main | <!-- e.g. SLES_531.55 --> | <!-- ELF / BIN / other --> | <!-- absolute path --> | <!-- path to .toml --> | <!-- analyzed / recompiled / not started --> |
+| <!-- Secondary? --> | <!-- e.g. COREC.BIN --> | <!-- BIN --> | <!-- absolute path --> | <!-- path to .toml --> | <!-- status --> |
 
 ## Environment Setup
 - **Ghidra Install Path**: <!-- The folder containing ghidraRun.bat (e.g., C:\ghidra_11.4.2_PUBLIC) -->
@@ -51,7 +67,6 @@ PHASE_SETUP
 - **CMake Generator**: <!-- e.g. Ninja (preferred) or Visual Studio 17 2022 -->
 - **C++ Compiler**: <!-- clang-cl (preferred) or MSVC cl -->
 - **Build Type**: <!-- Debug / Release / RelWithDebInfo -->
-- **TOML Path**: <!-- path to game.toml -->
 - **Ghidra CSV Path**: <!-- path to exported function map, if any -->
 - **single_file_output**: <!-- true/false -->
 

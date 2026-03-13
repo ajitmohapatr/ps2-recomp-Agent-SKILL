@@ -51,11 +51,15 @@ Then execute this startup sequence:
 1. INSPECT my workspace. Look for:
    - Any `PS2_PROJECT_STATE.md` (persistent memory from a previous session)
    - Any build directory (`build64/`, `build/`, etc.)
-   - Any `game.toml` or ELF files
+   - Any `game.toml` or ELF files (may be in a SEPARATE game workspace folder!)
    ⚠️ DANGER: Do NOT list or search inside `runner/` directories!
    They contain 30,000+ files and WILL crash you. Instead use:
      Test-Path ps2xRuntime/src/runner          (True/False)
      (Get-ChildItem ps2xRuntime/src/runner -Filter *.cpp).Count  (number)
+   
+   NOTE: Game files (ISO, ELF, TOML, recomp output) are often in a sibling
+   directory next to PS2Recomp, not inside it. If you can't find them here,
+   ASK for the game workspace path.
 
 2. If a build directory exists, READ `CMakeCache.txt` and report:
    - Generator (Ninja? Visual Studio?)
@@ -90,7 +94,9 @@ If you're starting a new game and want to skip the Q&A:
 Read the skill `ps2-recomp-Agent-SKILL/SKILL.md` and the boot sequence references.
 I'm porting [GAME NAME] ([REGION CODE], e.g. SLES_531.55).
 ISO is at: [ABSOLUTE PATH TO ISO]
-PS2Recomp workspace is at: [ABSOLUTE PATH TO WORKSPACE]
+PS2Recomp repo is at: [ABSOLUTE PATH TO PS2RECOMP]
+Game workspace is at: [ABSOLUTE PATH TO GAME FOLDER]
+(If game workspace = PS2Recomp, just say "same")
 Start at Phase 0 — detect my build config and report before doing anything.
 ```
 
