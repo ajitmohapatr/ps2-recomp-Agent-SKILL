@@ -31,37 +31,64 @@ For the agent to work flawlessly, your machine must have the following ready:
    - Installed with the [EmotionEngine Reloaded Plugin](https://github.com/chaoticgd/ghidra-emotionengine-reloaded).
    - Installed with the [**GhydraMCP**](https://github.com/starsong-consulting/GhydraMCP) extension running on port 8192 (CodeBrowser must be open with the ELF).
    - **Crucial**: Ensure `mcp_config.json` inside your AI environment (Cursor/Antigravity) is configured to connect to the local GhydraMCP server. This allows the *Agent* to drive Ghidra, not you!
+4. **Skill Placement**: Place the `ps2-recomp-Agent-SKILL/` folder inside your root PS2Recomp workspace, alongside `ps2xRecomp` and `ps2xRuntime`.
 
 ---
 
 ## 🚀 Start a Session
 
-### 1. File Placement
-Ensure the `ps2-recomp-Agent-SKILL/` folder (or `ps2-recomp-Agent-SKILL-main/` if downloaded as ZIP) is placed inside your root PS2Recomp workspace, alongside the `ps2xRecomp` and `ps2xRuntime` directories.
+### The Universal Starter Prompt
 
-### 2. Scenario A: The Clean Slate (Brand New Project)
-If you are starting a game completely from scratch, open your AI IDE (Cursor/Antigravity) and use this **EXACT PROMPT** to begin:
+Copy-paste this **entire block** into your AI IDE (Cursor, Antigravity, Claude Code, etc.) to activate the skill. It works whether you have a brand-new project, a half-done manual port, or need to resume from a previous session.
 
 ```text
-Load the skill `ps2-recomp-Agent-SKILL`. I need to port [GAME NAME]. 
-The ISO is located at `[ABSOLUTE PATH TO ISO]`. Start at Phase 0. 
+Read the skill file `ps2-recomp-Agent-SKILL/SKILL.md` and BOTH boot sequence references
+(`references/03-ps2recomp-pipeline.md` and `references/04-runtime-syscalls-stubs.md`).
+Do NOT proceed until you have read all three files.
+
+Then execute this startup sequence:
+
+1. INSPECT my workspace. Look for:
+   - Any `PS2_PROJECT_STATE.md` (persistent memory from a previous session)
+   - Any build directory (`build64/`, `build/`, etc.)
+   - Any `game.toml` or ELF files
+   - Any `ps2xRuntime/src/runner/*.cpp` (generated code)
+
+2. If a build directory exists, READ `CMakeCache.txt` and report:
+   - Generator (Ninja? Visual Studio?)
+   - Compiler (clang-cl? MSVC cl.exe?)
+   - Build type (Release? Debug?)
+   Then rate the config (⚡ Optimal / ⚠️ Acceptable / ❌ Critical) and
+   suggest improvements if needed. Do NOT change anything without my OK.
+
+3. ASK me for anything you still don't know. Typical questions:
+   - What game am I porting? (title + region code like SLES_531.55)
+   - Where is the ISO? (absolute path)
+   - What phase am I in? (or should you infer it from the workspace?)
+
+4. REPORT: Tell me what you found, what phase I'm in, and what the
+   next concrete step is. Then wait for my go-ahead.
 ```
 
-### 3. Scenario B: The Adoption (Mid-way Manual Progress)
-If you started porting a game *manually* (e.g., you already extracted the ELF, maybe set up Ghidra, or generated a basic `game.toml`), but you don't have a `PS2_PROJECT_STATE.md` file yet, use this prompt to let the Agent infer your progress:
+> **Why this works:** The prompt forces the agent to *read first, detect second, ask third, act last*. It cannot skip the skill files, cannot assume your build config, and cannot start breaking things without your approval.
+
+### Quick Resume (new chat, same project)
+If you already used the starter prompt before and just need to resume (e.g., context degradation, new chat window):
 
 ```text
-Load the skill `ps2-recomp-Agent-SKILL`. I am porting [GAME NAME].
-I have already made some manual progress. Please inspect my working directory, locate my ELF/TOML/logs if they exist, infer my current Phase, generate a `PS2_PROJECT_STATE.md` file reflecting reality, and tell me what we should do next.
+Read the skill `ps2-recomp-Agent-SKILL/SKILL.md` and the boot sequence references.
+Then read `PS2_PROJECT_STATE.md` to recover our progress. Resume from there.
 ```
 
-### 4. Scenario C: The Warm Resume (New Chat / Context Reset)
-LLM Agents eventually run out of memory (context degradation) if a chat gets too long. If the Agent starts acting lobotomized or forgetting basic instructions, **open a brand new chat window** and use this prompt to safely hook back into the persistent memory:
+### Fresh Game (you know exactly what you want)
+If you're starting a new game and want to skip the Q&A:
 
 ```text
-Load the skill `ps2-recomp-Agent-SKILL`. We are working on [GAME NAME]. 
-Read the `PS2_PROJECT_STATE.md` file to infer the current Phase, 
-and resume work autonomously from there.
+Read the skill `ps2-recomp-Agent-SKILL/SKILL.md` and the boot sequence references.
+I'm porting [GAME NAME] ([REGION CODE], e.g. SLES_531.55).
+ISO is at: [ABSOLUTE PATH TO ISO]
+PS2Recomp workspace is at: [ABSOLUTE PATH TO WORKSPACE]
+Start at Phase 0 — detect my build config and report before doing anything.
 ```
 
 ---
