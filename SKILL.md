@@ -60,6 +60,11 @@ Violating ANY of these is an immediate, unrecoverable failure. No exceptions.
 7. **NEVER delete, overwrite, or clean ANY build artifact without asking the user first.** This includes object files, libraries, executables, and CMake cache.
 8. **NEVER use `> out.txt` or pipe build output to files.** Run the executable directly and read stdout.
 9. **NEVER run `cmake` outside a vcvars64 environment.** If you run `cmake --build build64` from a plain PowerShell/cmd, it WILL fail with missing SDK headers (`winresrc.h`, `windows.h`). You MUST be inside an **x64 Native Tools Command Prompt for VS** or wrap every cmake call with: `cmd.exe /c "call ""<vcvars64_path>"" && cmake --build build64"`
+10. **NEVER list, search, or scan inside `runner/` directories.** Directories like `ps2xRuntime/src/runner/` contain **30,000+ generated .cpp files**. Running `list_dir`, `find_by_name`, or `grep_search` on them will produce output so large it **crashes the agent** (context window overflow / truncation error). Safe alternatives:
+    - **Check existence:** `Test-Path ps2xRuntime/src/runner` (returns True/False)
+    - **Count files:** `(Get-ChildItem ps2xRuntime/src/runner -Filter *.cpp).Count` (returns a number)
+    - **Read ONE specific file:** `view_file` on a single known path like `runner/out_00100008.cpp`
+    - **NEVER:** `list_dir("ps2xRuntime/src/runner")`, `find_by_name("*.cpp", runner)`, or any glob/search that could return thousands of results
 
 ## 🧠 MENTAL MODEL (5 Rules)
 
@@ -107,7 +112,12 @@ After ANY code change:
    - `CMAKE_GENERATOR` (Ninja? Visual Studio?)
    - `CMAKE_CXX_COMPILER` (clang-cl? cl.exe/MSVC?)
    - `CMAKE_BUILD_TYPE` (Release? Debug? empty?)
-3. **Report & suggest.** Tell the user what you found and rate it:
+3. **Check runner code exists (SAFELY).** Do NOT list the runner directory! Use:
+   ```powershell
+   Test-Path ps2xRuntime/src/runner  # True/False
+   (Get-ChildItem ps2xRuntime/src/runner -Filter *.cpp).Count  # e.g. 32000
+   ```
+4. **Report & suggest.** Tell the user what you found and rate it:
    | Config | Rating | Agent Action |
    |--------|--------|--------------|
    | clang-cl + Ninja + Release | ⚡ Optimal | Use as-is. Do NOT reconfigure. |
@@ -116,8 +126,8 @@ After ANY code change:
    | No build dir at all | 🆕 Fresh | Guide user through initial cmake configure (see pipeline reference). |
    
    **NEVER reconfigure or delete the build directory without explicit user approval.** Only suggest; let the user decide.
-4. Verify `ps2_analyzer` and `ps2_recomp` executables exist. Build if missing.
-5. Extract main ELF from ISO.
+5. Verify `ps2_analyzer` and `ps2_recomp` executables exist. Build if missing.
+6. Extract main ELF from ISO.
    **Exit:** Toolchain verified, build config reported, ELF extracted.
 
 ### Phase 1 — ELF Analysis (`PHASE_ELF_ANALYSIS`)

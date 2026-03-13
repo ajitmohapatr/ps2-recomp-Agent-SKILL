@@ -52,7 +52,10 @@ Then execute this startup sequence:
    - Any `PS2_PROJECT_STATE.md` (persistent memory from a previous session)
    - Any build directory (`build64/`, `build/`, etc.)
    - Any `game.toml` or ELF files
-   - Any `ps2xRuntime/src/runner/*.cpp` (generated code)
+   ⚠️ DANGER: Do NOT list or search inside `runner/` directories!
+   They contain 30,000+ files and WILL crash you. Instead use:
+     Test-Path ps2xRuntime/src/runner          (True/False)
+     (Get-ChildItem ps2xRuntime/src/runner -Filter *.cpp).Count  (number)
 
 2. If a build directory exists, READ `CMakeCache.txt` and report:
    - Generator (Ninja? Visual Studio?)
