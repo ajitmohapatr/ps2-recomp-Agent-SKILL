@@ -51,6 +51,8 @@ If you cannot answer all 3, re-read the files. Do NOT proceed to any workflow ph
 
 Other references (`01`, `02`, `05`–`09`) are on-demand — load them when you need specific hardware, ISA, or Ghidra knowledge for a task.
 
+> **Knowledge Databases** (in `resources/`): When stubbing syscalls or SDK functions, consult `db-syscalls.md`, `db-sdk-functions.md`, `db-registers.md`, or `db-memory-map.md` first — they contain implementation status and parameter details.
+
 ### Quick Anchor — The 4 Tools (memorize this)
 
 Every fix maps to exactly ONE of these. If it doesn't, you don't understand the problem yet.
@@ -437,6 +439,10 @@ Only load these files when you need specific knowledge. Do not pre-load all of t
 | `references/06-game-porting-playbook.md` | `sub_xxx` inference, triage strategies |
 | `references/07-ps2-code-patterns.md` | DMA, VIF, GS packets, CD/IOP loops |
 | `references/08-infinite-knowledge-base.md` | Instructions for searching `09-ps2tek.md` |
+| `resources/db-syscalls.md` | EE syscall table — numbers, params, return, impl status |
+| `resources/db-sdk-functions.md` | SDK function stubs — signatures, impl status, categories |
+| `resources/db-hwregs.md` | Hardware register map — IPU/VIF/DMA/GS addresses |
+| `resources/db-memory-map.md` | EE address space — RDRAM/IO/SPR/GS translation rules |
 
 ## 🧰 SCRIPTS & EXAMPLES
 
