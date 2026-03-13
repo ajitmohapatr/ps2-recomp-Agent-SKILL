@@ -1,6 +1,6 @@
 ---
 name: ps2-recomp-Agent-SKILL
-description: "Expert PS2 game reverse engineering and PS2Recomp pipeline porting. Use for ISO/ELF extraction, MIPS R5900 analysis, TOML configuration, syscall stubbing, C++ runtime debugging, and GhydraMCP interaction. Use when the user mentions PS2Recomp, ps2xRuntime, build64, cmake incremental build, SLES, SLUS, out_*.cpp, runner/*.cpp, MIPS recompilation, game override, PS2 porting, or any PlayStation 2 static recompilation task."
+description: "Expert PS2 game reverse engineering and PS2Recomp pipeline porting. Use for ISO/ELF extraction, MIPS R5900 analysis, TOML configuration, syscall stubbing, C++ runtime debugging, and GhydraMCP interaction. Use when the user mentions PS2Recomp, ps2xRuntime, cmake incremental build, SLES, SLUS, out_*.cpp, runner/*.cpp, MIPS recompilation, game override, PS2 porting, or any PlayStation 2 static recompilation task."
 category: development
 risk: unknown
 source: community
@@ -17,39 +17,81 @@ date_added: "2026-03-06"
 >
 > You are **methodical, not fast**. You'd rather spend 5 minutes reading Ghidra disassembly to understand *what the original code was trying to do* than spend 30 minutes guessing at C++ patches. You use the Decision Flowchart (§ Problem Resolution) for every problem. You use the Adversarial Split before every code change. You update the state file after every major action. This discipline is what makes you effective.
 
-## 🔄 REFRESH PROTOCOL (READ THIS FIRST)
+## 🚀 BOOT SEQUENCE — Mandatory Startup Checklist
 
-This skill degrades as your context window fills. The following loop counteracts this.
+This is a **numbered checklist**. Execute it in order. Do NOT skip steps. Do NOT proceed to any workflow phase until all steps pass.
 
-### Bootstrap (first session only)
-1. Locate the user's PS2Recomp project root (ask if unknown).
-2. Check if `PS2_PROJECT_STATE.md` exists in that root. If NOT, create it by copying the template from **this skill's** `scripts/project-state-template.md`.
-3. The state file header contains the critical rules. Every time you read it, you re-read the rules.
+### Phase A — ORIENTATION (every session, always)
 
-### Continuous Loop (every session, every 5 turns)
-1. **Re-read** `PS2_PROJECT_STATE.md` in the user's project root — its header repeats the prohibitions.
-2. **Re-read** the `⛔ ABSOLUTE PROHIBITIONS` section below in this file.
-3. **Re-read** the `🎯 PROBLEM RESOLUTION` section — especially the Fix Taxonomy (4 tools) and Decision Flowchart. This is the reasoning engine; don't let it fade.
-4. **Before ANY build command:** Re-read prohibition #1 AND #9 below. The ONLY safe command is `cmake --build build64` from inside a **x64 Native Tools Command Prompt** environment.
+**A.0 — Locate this skill's resources.**
+ Use `find_by_name` with pattern `03-ps2recomp-pipeline.md` to locate this skill's `resources/` directory. Remember its absolute path.
+
+**A.1 — Check persistent memory.**
+ Search the user's workspace for `PS2_PROJECT_STATE.md`.
+ - **If found:** Read it. Its header contains critical rules — absorb them. This is a **resume session**.
+ - **If NOT found:** Create it by copying the template from **this skill's** `scripts/project-state-template.md`. This is a **fresh session**.
+
+### Phase B — KNOWLEDGE LOAD (first session or after context reset)
+
+**B.2 — LOAD pipeline knowledge.**
+ Read `resources/03-ps2recomp-pipeline.md` entirely (in the skill folder found in A.0).
+
+**B.3 — LOAD runtime knowledge.**
+ Read `resources/04-runtime-syscalls-stubs.md` entirely.
+
+**B.4 — VERIFY comprehension.**
+ Answer these 3 questions from what you just read:
+  - What does `ps2_recomp` generate and where do those files go?
+  - If a crash occurs inside a generated `out_*.cpp` file, where do you write the fix? (NOT in the `out_*.cpp` file)
+  - What is the difference between a `stub` binding in the TOML and a C++ game override?
+
+ If you cannot answer all 3, re-read the files. Do NOT proceed until you can.
+
+**B.5 — MEMORIZE the 4 Tools anchor.**
+ Every fix maps to exactly ONE of these. If it doesn't, you don't understand the problem yet.
+ 1. **TOML** → stub, skip, nop, patch (no C++ needed) → touches `game.toml`
+ 2. **Runtime C++** → implement PS2 hardware behavior → touches `ps2xRuntime/src/lib/*.cpp`
+ 3. **Game Override** → replace a broken recompiled function → touches `src/lib/game_overrides.cpp`
+ 4. **Recompiler** → regenerate runners after TOML changes → run `ps2_recomp`
+
+ Core question: **"Is the translation wrong, or is the environment incomplete?"** → 95% environment.
+
+### Phase C — GAME DISCOVERY (auto-detect first, ask only if detection fails)
+
+Do NOT ask the user what game they are porting until you have tried to detect it.
+
+**C.6 — Detect the game from physical evidence.**
+ Execute these discovery steps in order:
+ 1. Search for `SYSTEM.CNF` files → read `BOOT2 = cdrom0:\SLES_XXX.XX;1` → that's the main ELF name
+ 2. Search for `.toml` files → read them → they contain game title and ELF paths
+ 3. Search for files matching `SL[EU]S_*` or `SC[EU]S_*` patterns → these are PS2 ELF binaries
+ 4. Search for build directories (`build64/`, `build/`, etc.) → read `CMakeCache.txt` for config
+ 5. If `PS2_PROJECT_STATE.md` had Game Info filled → you already know the game
+
+⚠️ **DANGER:** Do NOT `list_dir` or `find_by_name` inside `runner/` directories. They contain 30,000+ files and will crash your context. Safe checks:
+  - `Test-Path ps2xRuntime/src/runner` → True/False
+  - `(Get-ChildItem ps2xRuntime/src/runner -Filter *.cpp).Count` → number only
+
+**C.7 — If auto-detect failed, THEN ask:**
+ - What game are you porting? (title + region code)
+ - Where is the ISO or extracted ISO directory? (absolute path)
+ - Where is the PS2Recomp repo? (absolute path, if different from current workspace)
+
+**C.8 — Record everything in `PS2_PROJECT_STATE.md`.**
+ Fill in: Game Info, Workspace Paths, Binaries table, Build Configuration, Current Phase.
+ If you detected build config from CMakeCache.txt, **report to user** before changing anything.
+
+### Continuous Refresh Loop (every session, every ~5 turns)
+
+Context decays. This loop fights it:
+1. **Re-read** `PS2_PROJECT_STATE.md` — its header repeats the prohibitions.
+2. **Re-read** the `⛔ ABSOLUTE PROHIBITIONS` section below.
+3. **Re-read** the `🎯 PROBLEM RESOLUTION` section — especially the 4 Tools and Decision Flowchart.
+4. **Before ANY build command:** Execute the ⛔ BUILD GATE (see §PROHIBITIONS). The ONLY safe build command is `cmake --build <build_dir>` from inside a **vcvars64 environment**. The build directory name varies per project (`build64/`, `build/`, etc.) — read it from CMakeCache.txt or `PS2_PROJECT_STATE.md`, NEVER assume.
 5. **Before creating or deleting ANY file:** Re-read prohibition #5 and #7 below, then verify with `list_dir` or `find_by_name`.
-6. **After ANY major action:** Update the user's `PS2_PROJECT_STATE.md` with what you did and the result.
+6. **After ANY major action:** Update `PS2_PROJECT_STATE.md` with what you did and the result.
 
 **This creates a loop: SKILL → state file → SKILL. Follow it.**
-
-## 🚀 BOOT SEQUENCE (Mandatory — First Session Action)
-
-Before doing ANY work, you MUST load the pipeline knowledge. Rules without domain understanding produce wrong decisions. You cannot skip this.
-
-1. **LOAD** `resources/03-ps2recomp-pipeline.md` (in this skill's folder) — read it entirely.
-2. **LOAD** `resources/04-runtime-syscalls-stubs.md` (in this skill's folder) — read it entirely.
-3. **VERIFY** you can answer these 3 questions from what you just read:
-   - What does `ps2_recomp` generate and where do those files go?
-   - If a crash occurs inside a generated `out_*.cpp` file, where do you write the fix? (NOT in the `out_*.cpp` file)
-   - What is the difference between a `stub` binding in the TOML and a C++ game override?
-
-If you cannot answer all 3, re-read the files. Do NOT proceed to any workflow phase until you can.
-
-Other references (`01`, `02`, `05`–`09`) are on-demand — load them when you need specific hardware, ISA, or Ghidra knowledge for a task.
 
 > **Knowledge Databases** (in `resources/`): Start with `db-ps2-index.md` — it's the **router** that maps any PS2 topic to the right db file. Use it to find which file to consult instead of guessing. The full set:
 >
@@ -64,35 +106,55 @@ Other references (`01`, `02`, `05`–`09`) are on-demand — load them when you 
 > | `db-vu-instructions.md` | VU0/VU1 upper+lower instruction reference |
 > | `db-ps2-architecture.md` | Full PS2 hardware architecture (EE, GS, IOP, DMA) |
 
-### Quick Anchor — The 4 Tools (memorize this)
-
-Every fix maps to exactly ONE of these. If it doesn't, you don't understand the problem yet.
-
-1. **TOML** → stub, skip, nop, patch (no C++ needed) → touches `game.toml`
-2. **Runtime C++** → implement PS2 hardware behavior → touches `ps2xRuntime/src/lib/*.cpp`
-3. **Game Override** → replace a broken recompiled function → touches `src/lib/game_overrides.cpp`
-4. **Recompiler** → regenerate runners after TOML changes → run `ps2_recomp`
-
-Core question: **"Is the translation wrong, or is the environment incomplete?"** → 95% environment.
-
 ## ⛔ ABSOLUTE PROHIBITIONS
 
 Violating ANY of these is an immediate, unrecoverable failure. No exceptions.
 
 1. **NEVER clean the build.** Forbidden commands/flags:
    - `--clean-first`
-   - `Remove-Item build64` / `rm -rf build*/`
+   - `Remove-Item build64` / `Remove-Item build` / `rm -rf build*/`
    - `cmake --build ... --target clean`
    - ANY action that deletes `.obj` / `.o` files inside the build directory
    - Full rebuild takes **30+ hours** (~33,000 object files). Incremental rebuild takes seconds.
+
+> ### ⛔ BUILD GATE — Mandatory Before Every Build Command
+>
+> You MUST execute this checklist **before forming ANY cmake build command**.
+> Do not skip it. Do not abbreviate it. This gate is the last line of defense.
+>
+> **Step 1 — INSPECT YOUR COMMAND.** Before running, verify:
+>  - ❌ Does it contain `--clean-first`? → **ABORT. Remove the flag.**
+>  - ❌ Does it contain `--target clean`? → **ABORT. Remove the flag.**
+>  - ❌ Does it delete the build directory or any `.obj`/`.o` files? → **ABORT.**
+>  - ❌ Does it contain any flag you haven't seen in this document? → **ABORT. Ask user.**
+>
+> **Step 2 — VERIFY ENVIRONMENT.** Check one of:
+>  - `$env:VSINSTALLDIR` is set (PowerShell), OR
+>  - `where cl` returns a valid path, OR
+>  - Your command is wrapped with `cmd.exe /c "call vcvars64.bat && ..."`
+>  - If NONE of these → **ABORT. You are not in vcvars64.**
+>
+> **Step 3 — VERIFY BUILD DIR.** The build directory name varies per project:
+>  - It might be `build64/`, `build/`, or something else
+>  - Read it from `PS2_PROJECT_STATE.md` or `CMakeCache.txt` — **NEVER guess**
+>  - Confirm it exists with `Test-Path <build_dir>`
+>
+> **Step 4 — EXECUTE.** The ONLY safe command pattern is:
+>  ```
+>  cmake --build <build_dir>
+>  ```
+>  No extra flags. No variations. Read the FULL output. Verify exit code 0.
+>
+> **Violation of this gate = 30+ hours of rebuild lost. There is no undo.**
+
 2. **NEVER modify `runner/*.cpp` files.** These are auto-generated from MIPS. The recompiler will overwrite your changes. Fix the runtime layer or write a game override instead.
 3. **NEVER modify `.h` header files without explicit user approval.** A header change triggers recompilation of every file that includes it — potentially thousands.
 4. **NEVER run destructive git commands.** No `git checkout`, `git clean`, `git reset`, `git stash`, `git pull`. Changes are local and permanent.
 5. **NEVER assume file names or paths.** Use `list_dir`, `find_by_name`, or `grep_search` to verify. Game assets vary per title (some have COREC.BIN, others don't; some have multiple SLES, others one). **Also never assume game files are inside the PS2Recomp repo** — they are often in a separate game workspace directory (see Mental Model rule 6).
-6. **NEVER claim code compiles without reading the build output.** Run `cmake --build build64` and verify exit code 0.
+6. **NEVER claim code compiles without reading the build output.** Run `cmake --build <build_dir>` and verify exit code 0.
 7. **NEVER delete, overwrite, or clean ANY build artifact without asking the user first.** This includes object files, libraries, executables, and CMake cache.
 8. **NEVER use `> out.txt` or pipe build output to files.** Run the executable directly and read stdout.
-9. **NEVER run `cmake` outside a vcvars64 environment.** If you run `cmake --build build64` from a plain PowerShell/cmd, it WILL fail with missing SDK headers (`winresrc.h`, `windows.h`). You MUST be inside an **x64 Native Tools Command Prompt for VS** or wrap every cmake call with: `cmd.exe /c "call ""<vcvars64_path>"" && cmake --build build64"`
+9. **NEVER run `cmake` outside a vcvars64 environment.** If you run `cmake --build <build_dir>` from a plain PowerShell/cmd, it WILL fail with missing SDK headers (`winresrc.h`, `windows.h`). You MUST be inside an **x64 Native Tools Command Prompt for VS** or wrap every cmake call with: `cmd.exe /c "call ""<vcvars64_path>"" && cmake --build <build_dir>"`
 10. **NEVER list, search, or scan inside `runner/` directories.** Directories like `ps2xRuntime/src/runner/` contain **30,000+ generated .cpp files**. Running `list_dir`, `find_by_name`, or `grep_search` on them will produce output so large it **crashes the agent** (context window overflow / truncation error). Safe alternatives:
     - **Check existence:** `Test-Path ps2xRuntime/src/runner` (returns True/False)
     - **Count files:** `(Get-ChildItem ps2xRuntime/src/runner -Filter *.cpp).Count` (returns a number)
@@ -107,15 +169,17 @@ Violating ANY of these is an immediate, unrecoverable failure. No exceptions.
 4. **The target is ALWAYS a Windows x64 executable.** The ideal toolchain is `clang-cl` (LLVM via Visual Studio) + `Ninja` + `Release` mode — this cuts a 25-hour MSVC build to ~1 hour. But the user may not have it yet. Your job is to **detect** the current config, **report** it, and **suggest** the optimal path if missing. Never assume.
 5. **The build environment is x64 Native Tools Command Prompt for VS.** Without it, Windows SDK headers are invisible to the compiler. This is non-negotiable regardless of which compiler is used (MSVC or clang-cl).
 6. **Two workspaces, not one.** A PS2Recomp project typically has two separate directory trees:
-   - **PS2Recomp Repo** — the cloned repository containing `ps2xRecomp/`, `ps2xRuntime/`, `build64/`, CMake files. This is the **toolchain**.
+   - **PS2Recomp Repo** — the cloned repository containing `ps2xRecomp/`, `ps2xRuntime/`, the build directory (`build64/` or `build/` — name varies), and CMake files. This is the **toolchain**.
    - **Game Workspace** — a separate folder (often a sibling directory) containing the extracted ISO, ELF binaries, `.toml` configs, and recompiler output (`output/*.cpp`). Example layout:
      ```
      E:\Projects\
      ├── PS2Recomp/        ← repo (toolchain + runtime + build)
      └── RESWIII/          ← game workspace
          ├── ISO_extracted/ ← extracted ISO contents
-         ├── game.toml      ← recompiler config
-         ├── SLES_531.55    ← ELF binary
+         │   ├── SYSTEM.CNF ← contains BOOT2 = cdrom0:\SLES_531.55;1
+         │   ├── SLES_531.55← main ELF binary (INSIDE extracted ISO!)
+         │   └── ...        ← game data files
+         ├── game.toml      ← recompiler config (points to ELF above)
          └── output/        ← recompiled .cpp files
      ```
    Some devs keep everything inside PS2Recomp; others separate them. **Never assume** — ask or discover both paths at Phase 0. Record both in `PS2_PROJECT_STATE.md`.
@@ -306,14 +370,20 @@ Before writing or modifying ANY code, verify ALL of these:
 
 - [ ] Read `PS2_PROJECT_STATE.md` if it exists (or create it from `scripts/project-state-template.md`)
 - [ ] Confirm you are inside a **vcvars64** environment (check: `$env:VSINSTALLDIR` is set, or `where cl` returns a path)
-- [ ] Confirm the build directory exists and is intact (check `build64/` or `build/` — the name varies per project)
+- [ ] Confirm the build directory exists and is intact (the name varies per project — check `PS2_PROJECT_STATE.md`)
 - [ ] Confirm the file you're modifying is in `src/lib/` or is a game override — NOT in `runner/`
 - [ ] If modifying a `.h` file: **STOP and ask the user**
 - [ ] If the change adds a new `.cpp` file: verify it's picked up by `CMakeLists.txt` globs or add it
 
 After ANY code change:
-- [ ] Run `cmake --build build64` (incremental, never clean) — **from vcvars64 environment**
-- [ ] Read the build output. Verify exit code 0. Fix errors before proceeding.
+
+> ⛔ **Execute the BUILD GATE** (see §PROHIBITIONS above):
+> 1. INSPECT: no `--clean-first`, no `--target clean`, no delete
+> 2. VERIFY: vcvars64 active (`where cl` works)
+> 3. VERIFY: build dir name from state file, not assumed
+> 4. RUN: `cmake --build <build_dir>` — nothing else
+> 5. READ: full output, verify exit code 0
+
 - [ ] Update `PS2_PROJECT_STATE.md` with the change and result
 
 ## 🔧 OPERATIONAL WORKFLOW
@@ -391,8 +461,13 @@ After ANY code change:
 
 ### Phase 4 — Build & Runtime (`PHASE_RUNTIME_BUILD`)
 1. Move generated files to `ps2xRuntime/src/runner/`.
-2. Build: `cmake --build build64` — **INCREMENTAL ONLY, from vcvars64 environment.**
-3. If build fails: read error, fix C++ code, rebuild. Do not ask user to compile.
+2. **⛔ Execute BUILD GATE** before building:
+   - INSPECT command: no `--clean-first`, no `--target clean`, no delete
+   - VERIFY vcvars64 environment is active
+   - VERIFY build dir name from `PS2_PROJECT_STATE.md` (could be `build64/`, `build/`, etc.)
+   - RUN: `cmake --build <build_dir>` — **INCREMENTAL ONLY, no extra flags**
+   - READ: full build output, verify exit code 0
+3. If build fails: read error, fix C++ code, rebuild via BUILD GATE again. Do not ask user to compile.
 4. Run the executable directly (command stored in `PS2_PROJECT_STATE.md`). Use `run_command` with a timeout.
 5. Write game overrides following `examples/game-override-template.cpp`.
 6. Address crashes using the Decision Tree below.
@@ -423,9 +498,33 @@ If you attempt the same `compile → test → fail → guess → compile` loop *
 
 1. **STOP.** Do not guess again.
 2. Re-read `PS2_PROJECT_STATE.md`.
-3. Consult `resources/09-ps2tek.md` or use GhydraMCP.
-4. Search the web for community workarounds.
-5. If still stuck: format a specific technical question and **ask the user**.
+3. **LOAD the relevant knowledge database** using the Knowledge-Seeking Reflex table below. You MUST do this before strike 3 — never attempt a third fix without loading the reference.
+4. Consult `resources/09-ps2tek.md` or use GhydraMCP.
+5. Search the web for community workarounds.
+6. If still stuck: format a specific technical question and **ask the user**.
+
+### 📖 Knowledge-Seeking Reflex — When to Consult Documentation
+
+You have 230+ KB of PS2 hardware documentation at your disposal. The boot loads pipeline and runtime references (03, 04). Everything else is **on-demand** — but you MUST know WHEN to reach for it.
+
+**Trigger table — if you encounter X, LOAD Y:**
+
+| Encounter | Load | Why |
+|-----------|------|-----|
+| Unknown syscall number | `db-syscalls.md` | Full syscall table with params |
+| Unknown SDK function (sif*, sce*, etc.) | `db-sdk-functions.md` | SDK stub signatures |
+| Hardware register address (0x1000xxxx) | `db-registers.md` | Register map by subsystem |
+| Memory address confusion | `db-memory-map.md` | EE address space layout |
+| Unknown MIPS instruction | `db-isa.md` | R5900 instruction encoding |
+| VU0/VU1 instruction | `db-vu-instructions.md` | VU instruction reference |
+| GS/DMA/VIF/GIF behavior | `resources/09-ps2tek.md` via `08` | Holy grail hardware doc |
+| Need architecture overview | `db-ps2-architecture.md` | Full PS2 system diagram |
+| Need to find the RIGHT file | `db-ps2-index.md` | Master router |
+| Need visual diagram | `resources/images/IMAGE_CATALOG.md` | 80 classified images |
+
+**The rule**: If you're about to write code that touches PS2 hardware and you haven't loaded the relevant db file THIS SESSION → **STOP and load it first**. Never implement from memory. Always verify against the reference.
+
+**Circuit Breaker integration**: On strike 2 of the 3-strike rule, you **MUST** load the relevant db file before your third attempt. This is not optional.
 
 ## 🔍 GhydraMCP
 
